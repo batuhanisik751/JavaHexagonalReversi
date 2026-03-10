@@ -14,7 +14,8 @@ import cs3500.reversi.strategy.MiniMax;
 import cs3500.reversi.strategy.CornersFirst;
 import cs3500.reversi.strategy.AvoidNextToCorners;
 import cs3500.reversi.strategy.AsManyPiecesAsPossible;
-import cs3500.reversi.strategy.DeepMiniMax;
+import cs3500.reversi.strategy.AlphaBetaMiniMax;
+
 import cs3500.reversi.view.ClassicTheme;
 import cs3500.reversi.view.DarkTheme;
 import cs3500.reversi.view.HighContrastTheme;
@@ -150,7 +151,7 @@ public final class Reversi {
       case "strategy3":
         return new CornersFirst();
       case "hard":
-        return new DeepMiniMax(3);
+        return new AlphaBetaMiniMax(3);
       case "strategy2":
         return new AvoidNextToCorners();
       case "strategy4":
