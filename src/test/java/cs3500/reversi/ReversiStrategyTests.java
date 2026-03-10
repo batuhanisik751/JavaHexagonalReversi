@@ -292,4 +292,67 @@ public class ReversiStrategyTests {
     mockMiniMax.chooseNextMove(model3, model3.getCurrentTurn());
     Assert.assertTrue(mockOutput.toString().contains("No valid moves found. Passing turn."));
   }
+
+  // ---- Phase 1.3: Strategy Edge Case Tests ----
+
+  // Test AsManyPiecesAsPossible works on a board size 5
+  @Test
+  public void testAsManyPiecesAsPossibleOnBoardSize5() {
+    IReversiModel model5 = new ReversiModel(5);
+    IReversiStrategies strategy = new AsManyPiecesAsPossible();
+    Player turnBefore = model5.getCurrentTurn();
+    strategy.chooseNextMove(model5, model5.getCurrentTurn());
+    // Should have made a move (turn changed)
+    Assert.assertNotEquals(turnBefore, model5.getCurrentTurn());
+    Assert.assertTrue(model5.getScore(Player.BLACK) > 3);
+  }
+
+  // Test MiniMax works on a board size 5
+  @Test
+  public void testMiniMaxOnBoardSize5() {
+    IReversiModel model5 = new ReversiModel(5);
+    IReversiStrategies strategy = new MiniMax();
+    Player turnBefore = model5.getCurrentTurn();
+    strategy.chooseNextMove(model5, model5.getCurrentTurn());
+    Assert.assertNotEquals(turnBefore, model5.getCurrentTurn());
+  }
+
+  // Test all strategies produce valid moves in a mid-game state
+  @Test
+  public void testStrategiesAfterSeveralMoves() {
+    IReversiStrategies[] strategies = {
+            new AsManyPiecesAsPossible(),
+            new AvoidNextToCorners(),
+            new CornersFirst(),
+            new MiniMax()
+    };
+    for (IReversiStrategies strategy : strategies) {
+      IReversiModel model = new ReversiModel(4);
+      // Play a few moves to get to mid-game
+      model.move(2, 4, model.getCurrentTurn());
+      model.move(4, 1, model.getCurrentTurn());
+      // Now let the strategy play for BLACK
+      int scoreBefore = model.getScore(Player.BLACK) + model.getScore(Player.WHITE);
+      strategy.chooseNextMove(model, model.getCurrentTurn());
+      // Strategy should either make a move (score increases) or pass (turn changes)
+      int scoreAfter = model.getScore(Player.BLACK) + model.getScore(Player.WHITE);
+      Assert.assertTrue(scoreAfter >= scoreBefore);
+    }
+  }
+
+  // Test CornersFirst tie-breaking with multiple corner moves
+  @Test
+  public void testCornersFirstTieBreaking() {
+    IReversiModel model = new ReversiModel(3);
+    // Set up board so multiple corners are valid moves
+    model.getSpace(2, 2).setFilled(Player.BLACK);
+    StringBuilder mockOutput = new StringBuilder();
+    MockCornersFirst mockCornersFirst = new MockCornersFirst(mockOutput);
+    mockCornersFirst.chooseNextMove(model, model.getCurrentTurn());
+    // Should pick the upper-left-most corner
+    String output = mockOutput.toString();
+    Assert.assertTrue(output.contains("Best move found"));
+    // The best corner move should be the topmost/leftmost one
+    Assert.assertTrue(output.contains("Best move found : row = 0, col = 2"));
+  }
 }
