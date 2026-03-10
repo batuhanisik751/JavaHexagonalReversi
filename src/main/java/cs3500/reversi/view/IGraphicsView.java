@@ -3,6 +3,7 @@ package cs3500.reversi.view;
 import java.util.List;
 
 import cs3500.reversi.controller.ViewListener;
+import cs3500.reversi.history.MoveRecord;
 import cs3500.reversi.model.Coordinate;
 
 /**
@@ -60,4 +61,10 @@ public interface IGraphicsView {
    * Shows a message indicating that undo is not available.
    */
   void undoNotAvailableMessage();
+
+  /**
+   * Updates the move history display with the given records.
+   * @param records the list of move records to display.
+   */
+  void updateHistory(List<MoveRecord> records);
 }

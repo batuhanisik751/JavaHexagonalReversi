@@ -16,6 +16,7 @@ import java.awt.event.ActionEvent;
 import java.util.List;
 
 import cs3500.reversi.controller.ViewListener;
+import cs3500.reversi.history.MoveRecord;
 import cs3500.reversi.model.Coordinate;
 import cs3500.reversi.model.IReadOnlyReversiModel;
 import cs3500.reversi.model.Player;
@@ -30,6 +31,7 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   private final JLabel whiteScoreLabel;
   private final Player player;
   private final JLabel turnLabel;
+  private final HistoryPanel historyPanel;
   private Runnable restartAction;
   private ViewListener viewListener;
 
@@ -87,6 +89,9 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
       System.exit(0);
     });
     buttonPanel.add(quitButton);
+
+    historyPanel = new HistoryPanel();
+    this.add(historyPanel, BorderLayout.EAST);
 
     setResizable(true);
     pack();
@@ -218,5 +223,10 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   public void undoNotAvailableMessage() {
     JOptionPane.showMessageDialog(this, "No move to undo.",
             "Undo Not Available", JOptionPane.INFORMATION_MESSAGE);
+  }
+
+  @Override
+  public void updateHistory(List<MoveRecord> records) {
+    this.historyPanel.updateHistory(records);
   }
 }

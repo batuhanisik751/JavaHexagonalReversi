@@ -3,6 +3,7 @@ package cs3500.reversi.controller;
 import java.util.ArrayList;
 import java.util.List;
 
+import cs3500.reversi.history.GameHistory;
 import cs3500.reversi.model.Coordinate;
 import cs3500.reversi.model.IReversiModel;
 import cs3500.reversi.model.Player;
@@ -16,6 +17,7 @@ public class Controller implements ViewListener {
   private final IReversiModel model;
   private final IGraphicsView view;
   private final Player player;
+  private final GameHistory history;
   private IReversiModel lastSnapshot;
 
   /**
@@ -23,11 +25,14 @@ public class Controller implements ViewListener {
    * @param model the reversi board/game to be played.
    * @param player the human/ai player that is using the controller.
    * @param view the view of the reversi model.
+   * @param history the shared game history log.
    */
-  public Controller(IReversiModel model, PlayerType player, IGraphicsView view) {
+  public Controller(IReversiModel model, PlayerType player, IGraphicsView view,
+                    GameHistory history) {
     this.model = model;
     this.player = player.getPlayer();
     this.view = view;
+    this.history = history;
     view.setViewListener(this);
     view.makeVisible();
   }
@@ -63,6 +68,8 @@ public class Controller implements ViewListener {
         }
       }
     }
+    history.recordMove(player, row, col, flipped);
+    view.updateHistory(history.getRecords());
     view.highlightLastMove(row, col, flipped);
     view.refresh();
     checkGameOver();
@@ -72,6 +79,8 @@ public class Controller implements ViewListener {
   public void onPass() {
     model.passTurn();
     this.lastSnapshot = null;
+    history.recordPass(player);
+    view.updateHistory(history.getRecords());
     view.highlightLastMove(-1, -1, new ArrayList<>());
     view.refresh();
     checkGameOver();
@@ -85,6 +94,8 @@ public class Controller implements ViewListener {
     }
     model.restoreFrom(lastSnapshot);
     lastSnapshot = null;
+    history.undoLast();
+    view.updateHistory(history.getRecords());
     view.highlightLastMove(-1, -1, new ArrayList<>());
     view.refresh();
   }

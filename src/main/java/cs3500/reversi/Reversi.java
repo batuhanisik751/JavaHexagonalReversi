@@ -4,6 +4,7 @@ import cs3500.reversi.controller.AIPlayer;
 import cs3500.reversi.controller.Controller;
 import cs3500.reversi.controller.HumanPlayer;
 import cs3500.reversi.controller.PlayerType;
+import cs3500.reversi.history.GameHistory;
 import cs3500.reversi.model.IReversiModel;
 import cs3500.reversi.model.Player;
 import cs3500.reversi.model.ReversiModel;
@@ -65,8 +66,9 @@ public final class Reversi {
     viewPlayer1.setRestartAction(restart);
     viewPlayer2.setRestartAction(restart);
 
-    Controller controller1 = new Controller(model, player1, viewPlayer1);
-    Controller controller2 = new Controller(model, player2, viewPlayer2);
+    GameHistory history = new GameHistory();
+    Controller controller1 = new Controller(model, player1, viewPlayer1, history);
+    Controller controller2 = new Controller(model, player2, viewPlayer2, history);
     controller1.start();
     controller2.start();
   }
