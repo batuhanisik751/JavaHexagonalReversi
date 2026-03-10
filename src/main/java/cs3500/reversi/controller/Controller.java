@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JFileChooser;
+import javax.swing.Timer;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import cs3500.reversi.history.GameHistory;
@@ -26,6 +27,7 @@ public class Controller implements ViewListener {
   private final IReversiModel model;
   private final IGraphicsView view;
   private final Player player;
+  private final PlayerType playerType;
   private final GameHistory history;
   private IReversiModel lastSnapshot;
 
@@ -40,6 +42,7 @@ public class Controller implements ViewListener {
                     GameHistory history) {
     this.model = model;
     this.player = player.getPlayer();
+    this.playerType = player;
     this.view = view;
     this.history = history;
     view.setViewListener(this);
@@ -48,9 +51,29 @@ public class Controller implements ViewListener {
 
   /**
    * Starts the Controller, showing the initial turn notification.
+   * If this controller's player is AI and it's their turn, triggers AI play.
    */
   public void start() {
     view.playerTurn();
+    tryAIMove();
+  }
+
+  private void tryAIMove() {
+    if (model.gameOver()) {
+      return;
+    }
+    if (playerType instanceof AIPlayer && model.getCurrentTurn() == player) {
+      Timer timer = new Timer(300, e -> {
+        if (!model.gameOver() && model.getCurrentTurn() == player) {
+          playerType.play(model);
+          view.refresh();
+          SoundManager.play("move");
+          checkGameOver();
+        }
+      });
+      timer.setRepeats(false);
+      timer.start();
+    }
   }
 
   @Override
@@ -84,6 +107,7 @@ public class Controller implements ViewListener {
     view.refresh();
     SoundManager.play("move");
     checkGameOver();
+    tryAIMove();
   }
 
   @Override
@@ -96,6 +120,7 @@ public class Controller implements ViewListener {
     view.refresh();
     SoundManager.play("pass");
     checkGameOver();
+    tryAIMove();
   }
 
   @Override
