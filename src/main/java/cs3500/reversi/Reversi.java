@@ -14,6 +14,7 @@ import cs3500.reversi.strategy.MiniMax;
 import cs3500.reversi.strategy.CornersFirst;
 import cs3500.reversi.strategy.AvoidNextToCorners;
 import cs3500.reversi.strategy.AsManyPiecesAsPossible;
+import cs3500.reversi.strategy.DeepMiniMax;
 
 /**
  * The main class for running the Reversi game.
@@ -24,8 +25,9 @@ public final class Reversi {
    * The main method to initiate and run the Reversi game with a graphical view.
    * @param args Command line arguments must be in the format of (boardsize player player) where
    *             player is either "human" or "ai". If "ai" is picked, then it must be followed by a
-   *             strategy ("strategy1", "strategy2", "strategy3", "strategy4").
-   *             Ex: (4 human ai strategy1), (4 human human), (3 ai strategy1 ai strategy4).
+   *             difficulty ("easy", "medium", "hard") or legacy strategy name
+   *             ("strategy1", "strategy2", "strategy3", "strategy4").
+   *             Ex: (4 human ai easy), (4 human human), (3 ai medium ai hard).
    */
   public static void main(String[] args) {
     startGame(args);
@@ -77,12 +79,16 @@ public final class Reversi {
   // gets the corresponding strategy to what is being inputted
   private static IReversiStrategies findStrategy(String strategy) {
     switch (strategy) {
+      case "easy":
       case "strategy1":
         return new AsManyPiecesAsPossible();
-      case "strategy2":
-        return new AvoidNextToCorners();
+      case "medium":
       case "strategy3":
         return new CornersFirst();
+      case "hard":
+        return new DeepMiniMax(3);
+      case "strategy2":
+        return new AvoidNextToCorners();
       case "strategy4":
         return new MiniMax();
       default:
