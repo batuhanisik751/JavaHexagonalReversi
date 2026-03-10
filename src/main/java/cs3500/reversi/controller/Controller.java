@@ -15,6 +15,7 @@ import cs3500.reversi.model.Player;
 import cs3500.reversi.persistence.GameLoader;
 import cs3500.reversi.persistence.GameSaver;
 import cs3500.reversi.persistence.LoadResult;
+import cs3500.reversi.audio.SoundManager;
 import cs3500.reversi.view.IGraphicsView;
 
 /**
@@ -59,6 +60,7 @@ public class Controller implements ViewListener {
     try {
       model.move(row, col, model.getCurrentTurn());
     } catch (IllegalStateException ise) {
+      SoundManager.play("invalid");
       view.invalidMoveMessage();
       view.refresh();
       return;
@@ -80,6 +82,7 @@ public class Controller implements ViewListener {
     view.updateHistory(history.getRecords());
     view.highlightLastMove(row, col, flipped);
     view.refresh();
+    SoundManager.play("move");
     checkGameOver();
   }
 
@@ -91,6 +94,7 @@ public class Controller implements ViewListener {
     view.updateHistory(history.getRecords());
     view.highlightLastMove(-1, -1, new ArrayList<>());
     view.refresh();
+    SoundManager.play("pass");
     checkGameOver();
   }
 
@@ -106,6 +110,7 @@ public class Controller implements ViewListener {
     view.updateHistory(history.getRecords());
     view.highlightLastMove(-1, -1, new ArrayList<>());
     view.refresh();
+    SoundManager.play("undo");
   }
 
   /**
@@ -170,6 +175,7 @@ public class Controller implements ViewListener {
 
   private void checkGameOver() {
     if (model.gameOver()) {
+      SoundManager.play("gameOver");
       view.gameOver(model.getOpponentScore(Player.WHITE),
               model.getOpponentScore(Player.BLACK));
     }

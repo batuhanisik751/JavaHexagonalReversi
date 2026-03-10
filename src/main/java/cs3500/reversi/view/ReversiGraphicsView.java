@@ -5,6 +5,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
+import javax.swing.JToggleButton;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -15,6 +16,7 @@ import java.awt.event.ActionEvent;
 
 import java.util.List;
 
+import cs3500.reversi.audio.SoundManager;
 import cs3500.reversi.controller.ViewListener;
 import cs3500.reversi.history.MoveRecord;
 import cs3500.reversi.model.Coordinate;
@@ -103,6 +105,12 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
       System.exit(0);
     });
     buttonPanel.add(quitButton);
+    JToggleButton muteButton = new JToggleButton("Mute");
+    muteButton.setSelected(SoundManager.isMuted());
+    muteButton.addActionListener((ActionEvent e) -> {
+      SoundManager.setMuted(muteButton.isSelected());
+    });
+    buttonPanel.add(muteButton);
 
     historyPanel = new HistoryPanel();
     this.add(historyPanel, BorderLayout.EAST);
