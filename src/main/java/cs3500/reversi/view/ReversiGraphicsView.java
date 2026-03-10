@@ -13,7 +13,10 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 
+import java.util.List;
+
 import cs3500.reversi.controller.ViewListener;
+import cs3500.reversi.model.Coordinate;
 import cs3500.reversi.model.IReadOnlyReversiModel;
 import cs3500.reversi.model.Player;
 
@@ -195,5 +198,10 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
     String message = "Player " + model.getCurrentTurn() + "'s turn.";
     JOptionPane.showMessageDialog(this, message,
             "Player Turn", JOptionPane.INFORMATION_MESSAGE);
+  }
+
+  @Override
+  public void highlightLastMove(int placedRow, int placedCol, List<Coordinate> flipped) {
+    this.reversiPanel.setHighlights(placedRow, placedCol, flipped);
   }
 }

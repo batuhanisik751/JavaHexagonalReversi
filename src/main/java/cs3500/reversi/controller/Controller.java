@@ -1,5 +1,9 @@
 package cs3500.reversi.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import cs3500.reversi.model.Coordinate;
 import cs3500.reversi.model.IReversiModel;
 import cs3500.reversi.model.Player;
 import cs3500.reversi.view.IGraphicsView;
@@ -34,11 +38,27 @@ public class Controller implements ViewListener {
 
   @Override
   public void onMove(int row, int col) {
+    Player[][] before = snapshotBoard();
     try {
       model.move(row, col, model.getCurrentTurn());
     } catch (IllegalStateException ise) {
       view.invalidMoveMessage();
+      view.refresh();
+      return;
     }
+    List<Coordinate> flipped = new ArrayList<>();
+    for (int r = 0; r < model.getBoard().size(); r++) {
+      for (int c = 0; c < model.getRow(r).size(); c++) {
+        if (r == row && c == col) {
+          continue;
+        }
+        Player afterPlayer = model.getSpaceContent(r, c);
+        if (afterPlayer != null && afterPlayer != before[r][c]) {
+          flipped.add(new Coordinate(r, c));
+        }
+      }
+    }
+    view.highlightLastMove(row, col, flipped);
     view.refresh();
     checkGameOver();
   }
@@ -46,6 +66,7 @@ public class Controller implements ViewListener {
   @Override
   public void onPass() {
     model.passTurn();
+    view.highlightLastMove(-1, -1, new ArrayList<>());
     view.refresh();
     checkGameOver();
   }
@@ -53,6 +74,19 @@ public class Controller implements ViewListener {
   /**
    * Checks if the game is over and shows the game over message if so.
    */
+  private Player[][] snapshotBoard() {
+    int rows = model.getBoard().size();
+    Player[][] snapshot = new Player[rows][];
+    for (int r = 0; r < rows; r++) {
+      int cols = model.getRow(r).size();
+      snapshot[r] = new Player[cols];
+      for (int c = 0; c < cols; c++) {
+        snapshot[r][c] = model.getSpaceContent(r, c);
+      }
+    }
+    return snapshot;
+  }
+
   private void checkGameOver() {
     if (model.gameOver()) {
       view.gameOver(model.getOpponentScore(Player.WHITE),

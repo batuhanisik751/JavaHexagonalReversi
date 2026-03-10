@@ -9,8 +9,11 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.List;
 
 import cs3500.reversi.controller.ViewListener;
+import cs3500.reversi.model.Coordinate;
 import cs3500.reversi.model.IReadOnlyReversiModel;
 import cs3500.reversi.model.Player;
 
@@ -29,6 +32,9 @@ public class ReversiPanel extends JPanel implements MouseListener, KeyListener {
   private ViewListener viewListener;
   private int selectedRow = -1;
   private int selectedCol = -1;
+  private int highlightPlacedRow = -1;
+  private int highlightPlacedCol = -1;
+  private List<Coordinate> highlightFlipped = new ArrayList<>();
 
   /**
    * Constructs a new ReversiPanel with the specified Reversi model.
@@ -47,6 +53,24 @@ public class ReversiPanel extends JPanel implements MouseListener, KeyListener {
    */
   public void setViewListener(ViewListener listener) {
     this.viewListener = listener;
+  }
+
+  /**
+   * Sets the highlight state for the last move.
+   * @param placedRow row of the placed piece, or -1 to clear.
+   * @param placedCol column of the placed piece, or -1 to clear.
+   * @param flipped list of coordinates of flipped pieces.
+   */
+  void setHighlights(int placedRow, int placedCol, List<Coordinate> flipped) {
+    this.highlightPlacedRow = placedRow;
+    this.highlightPlacedCol = placedCol;
+    this.highlightFlipped = flipped;
+  }
+
+  void clearHighlights() {
+    this.highlightPlacedRow = -1;
+    this.highlightPlacedCol = -1;
+    this.highlightFlipped = new ArrayList<>();
   }
 
   /**
@@ -86,6 +110,14 @@ public class ReversiPanel extends JPanel implements MouseListener, KeyListener {
             g2d.setColor(Color.GRAY);
             g2d.fill(hex);
             g2d.setColor(Color.BLACK);
+            g2d.draw(hex);
+          }
+          // Draw highlight ring for last move
+          if (r == highlightPlacedRow && c == highlightPlacedCol) {
+            g2d.setColor(new Color(0, 200, 0)); // green for placed piece
+            g2d.draw(hex);
+          } else if (isHighlightedFlip(r, c)) {
+            g2d.setColor(new Color(255, 165, 0)); // orange for flipped pieces
             g2d.draw(hex);
           }
         } else {
@@ -168,5 +200,14 @@ public class ReversiPanel extends JPanel implements MouseListener, KeyListener {
   @Override
   public void keyReleased(KeyEvent e) {
     // nothing specific happens when key is released
+  }
+
+  private boolean isHighlightedFlip(int row, int col) {
+    for (Coordinate coord : highlightFlipped) {
+      if (coord.getRow() == row && coord.getCol() == col) {
+        return true;
+      }
+    }
+    return false;
   }
 }
