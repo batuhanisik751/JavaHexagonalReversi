@@ -28,7 +28,14 @@ public class CornersFirst implements IReversiStrategies {
         cornerMoves.add(move);
       }
     }
-    Coordinate bestMove = cornerMoves.isEmpty() ? null : cornerMoves.get(0);
+    Coordinate bestMove;
+    if (!cornerMoves.isEmpty()) {
+      bestMove = cornerMoves.get(0);
+    } else if (!allMoves.isEmpty()) {
+      bestMove = allMoves.get(0);
+    } else {
+      bestMove = null;
+    }
     StrategyUtils.executeOrPass(model, bestMove, player);
   }
 

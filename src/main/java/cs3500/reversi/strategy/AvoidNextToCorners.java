@@ -30,7 +30,14 @@ public class AvoidNextToCorners implements IReversiStrategies {
         filteredMoves.add(move);
       }
     }
-    Coordinate bestMove = filteredMoves.isEmpty() ? null : filteredMoves.get(0);
+    Coordinate bestMove;
+    if (!filteredMoves.isEmpty()) {
+      bestMove = filteredMoves.get(0);
+    } else if (!allMoves.isEmpty()) {
+      bestMove = allMoves.get(0);
+    } else {
+      bestMove = null;
+    }
     StrategyUtils.executeOrPass(model, bestMove, player);
   }
 

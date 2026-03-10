@@ -9,8 +9,10 @@ import cs3500.reversi.model.ReversiModel;
 import cs3500.reversi.view.ITextView;
 import cs3500.reversi.view.TextView;
 import cs3500.reversi.strategy.AsManyPiecesAsPossible;
+import cs3500.reversi.strategy.AlphaBetaMiniMax;
 import cs3500.reversi.strategy.AvoidNextToCorners;
 import cs3500.reversi.strategy.CornersFirst;
+import cs3500.reversi.strategy.DeepMiniMax;
 import cs3500.reversi.strategy.IReversiStrategies;
 import cs3500.reversi.strategy.MiniMax;
 
@@ -354,5 +356,318 @@ public class ReversiStrategyTests {
     Assert.assertTrue(output.contains("Best move found"));
     // The best corner move should be the topmost/leftmost one
     Assert.assertTrue(output.contains("Best move found : row = 0, col = 2"));
+  }
+
+  // ---- CornersFirst Fallback Bug Tests ----
+
+  // CornersFirst should fall back to the upper-left-most valid move when no corners are available,
+  // NOT pass the turn. The Javadoc states: "if there are no corners available then the upper
+  // left-most valid move will be made."
+  @Test
+  public void testCornersFirstFallsBackToNonCornerMove() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies cornersFirst = new CornersFirst();
+    Player turnBefore = model.getCurrentTurn();
+    int scoreBefore = model.getScore(turnBefore);
+    cornersFirst.chooseNextMove(model, turnBefore);
+    // On a size-4 board at the start, no corners are valid moves.
+    // The strategy should still make a move, not pass.
+    Assert.assertNotEquals("CornersFirst should make a move even when no corners are available",
+            turnBefore, model.getCurrentTurn());
+    Assert.assertTrue("CornersFirst should have placed a piece",
+            model.getScore(turnBefore) > scoreBefore);
+  }
+
+  // CornersFirst should not pass when valid non-corner moves exist
+  @Test
+  public void testCornersFirstDoesNotPassWithValidMoves() {
+    IReversiModel model = new ReversiModel(5);
+    IReversiStrategies cornersFirst = new CornersFirst();
+    Player turnBefore = model.getCurrentTurn();
+    int scoreBefore = model.getScore(turnBefore);
+    cornersFirst.chooseNextMove(model, turnBefore);
+    // Should have made a move (turn changes and score increases)
+    Assert.assertNotEquals(turnBefore, model.getCurrentTurn());
+    Assert.assertTrue("CornersFirst should place a piece when valid moves exist",
+            model.getScore(turnBefore) > scoreBefore);
+  }
+
+  // ---- AvoidNextToCorners Fallback Bug Tests ----
+
+  // AvoidNextToCorners should fall back to a corner-adjacent move when ALL valid moves
+  // are next to corners, NOT pass the turn. The Javadoc states: "If there are only Spaces
+  // next to corners available as valid moves, the upper left-most will be chosen."
+  @Test
+  public void testAvoidNextToCornersFallsBackToCornerAdjacentMove() {
+    IReversiModel model = new ReversiModel(3);
+    IReversiStrategies avoid = new AvoidNextToCorners();
+    Player turnBefore = model.getCurrentTurn();
+    int scoreBefore = model.getScore(turnBefore);
+    avoid.chooseNextMove(model, turnBefore);
+    // On a size-3 board, all valid moves are next to corners.
+    // The strategy should still make a move, not pass.
+    Assert.assertTrue("AvoidNextToCorners should place a piece even when all moves "
+                    + "are next to corners",
+            model.getScore(turnBefore) > scoreBefore);
+  }
+
+  // AvoidNextToCorners should make a move on small boards where all moves are corner-adjacent
+  @Test
+  public void testAvoidNextToCornersDoesNotPassOnSmallBoard() {
+    IReversiModel model = new ReversiModel(3);
+    IReversiStrategies avoid = new AvoidNextToCorners();
+    Player turnBefore = model.getCurrentTurn();
+    avoid.chooseNextMove(model, turnBefore);
+    // Turn should change because a move was made, not just a pass
+    Assert.assertNotEquals(turnBefore, model.getCurrentTurn());
+    // The total piece count should have increased (a piece was placed and flips happened)
+    int totalPieces = model.getScore(Player.BLACK) + model.getScore(Player.WHITE);
+    Assert.assertTrue("A move should increase total pieces on board", totalPieces > 6);
+  }
+
+  // ---- DeepMiniMax Tests ----
+
+  // Test DeepMiniMax makes a valid move at depth 1
+  @Test
+  public void testDeepMiniMaxDepth1MakesMove() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies strategy = new DeepMiniMax(1);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    Assert.assertNotEquals("DeepMiniMax depth 1 should make a move",
+            turnBefore, model.getCurrentTurn());
+  }
+
+  // Test DeepMiniMax makes a valid move at depth 2
+  @Test
+  public void testDeepMiniMaxDepth2MakesMove() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies strategy = new DeepMiniMax(2);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    Assert.assertNotEquals("DeepMiniMax depth 2 should make a move",
+            turnBefore, model.getCurrentTurn());
+  }
+
+  // Test DeepMiniMax makes a valid move at depth 3
+  @Test
+  public void testDeepMiniMaxDepth3MakesMove() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies strategy = new DeepMiniMax(3);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    Assert.assertNotEquals("DeepMiniMax depth 3 should make a move",
+            turnBefore, model.getCurrentTurn());
+    Assert.assertTrue(model.getScore(turnBefore) > 3);
+  }
+
+  // Test DeepMiniMax passes when no valid moves exist
+  @Test
+  public void testDeepMiniMaxPassesWhenNoMoves() {
+    IReversiModel model = new ReversiModel(3);
+    model.getSpace(1, 2).setFilled(Player.BLACK);
+    model.getSpace(2, 1).setFilled(Player.BLACK);
+    model.getSpace(3, 2).setFilled(Player.BLACK);
+    IReversiStrategies strategy = new DeepMiniMax(3);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    // Should pass (turn changes but no pieces placed)
+    Assert.assertNotEquals(turnBefore, model.getCurrentTurn());
+  }
+
+  // Test DeepMiniMax works on board size 5
+  @Test
+  public void testDeepMiniMaxOnBoardSize5() {
+    IReversiModel model = new ReversiModel(5);
+    IReversiStrategies strategy = new DeepMiniMax(2);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    Assert.assertNotEquals(turnBefore, model.getCurrentTurn());
+  }
+
+  // Test DeepMiniMax in a mid-game state
+  @Test
+  public void testDeepMiniMaxMidGame() {
+    IReversiModel model = new ReversiModel(4);
+    model.move(2, 4, model.getCurrentTurn());
+    model.move(4, 1, model.getCurrentTurn());
+    IReversiStrategies strategy = new DeepMiniMax(2);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    Assert.assertNotEquals(turnBefore, model.getCurrentTurn());
+  }
+
+  // ---- AlphaBetaMiniMax Tests ----
+
+  // Test AlphaBetaMiniMax makes a valid move at depth 1
+  @Test
+  public void testAlphaBetaDepth1MakesMove() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies strategy = new AlphaBetaMiniMax(1);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    Assert.assertNotEquals("AlphaBetaMiniMax depth 1 should make a move",
+            turnBefore, model.getCurrentTurn());
+  }
+
+  // Test AlphaBetaMiniMax makes a valid move at depth 3 (the "hard" difficulty)
+  @Test
+  public void testAlphaBetaDepth3MakesMove() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies strategy = new AlphaBetaMiniMax(3);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    Assert.assertNotEquals("AlphaBetaMiniMax depth 3 should make a move",
+            turnBefore, model.getCurrentTurn());
+    Assert.assertTrue(model.getScore(turnBefore) > 3);
+  }
+
+  // Test AlphaBetaMiniMax passes when no valid moves exist
+  @Test
+  public void testAlphaBetaPassesWhenNoMoves() {
+    IReversiModel model = new ReversiModel(3);
+    model.getSpace(1, 2).setFilled(Player.BLACK);
+    model.getSpace(2, 1).setFilled(Player.BLACK);
+    model.getSpace(3, 2).setFilled(Player.BLACK);
+    IReversiStrategies strategy = new AlphaBetaMiniMax(3);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    Assert.assertNotEquals(turnBefore, model.getCurrentTurn());
+  }
+
+  // Test AlphaBetaMiniMax produces same result as DeepMiniMax at same depth
+  @Test
+  public void testAlphaBetaMatchesDeepMiniMax() {
+    IReversiModel modelAB = new ReversiModel(4);
+    IReversiModel modelDeep = new ReversiModel(4);
+    IReversiStrategies alphaBeta = new AlphaBetaMiniMax(3);
+    IReversiStrategies deep = new DeepMiniMax(3);
+    alphaBeta.chooseNextMove(modelAB, modelAB.getCurrentTurn());
+    deep.chooseNextMove(modelDeep, modelDeep.getCurrentTurn());
+    // Both should produce the same board state
+    ITextView viewAB = new TextView(modelAB);
+    ITextView viewDeep = new TextView(modelDeep);
+    Assert.assertEquals("AlphaBeta and DeepMiniMax should choose the same move at depth 3",
+            viewDeep.toString(), viewAB.toString());
+  }
+
+  // Test AlphaBetaMiniMax works on board size 5
+  @Test
+  public void testAlphaBetaOnBoardSize5() {
+    IReversiModel model = new ReversiModel(5);
+    IReversiStrategies strategy = new AlphaBetaMiniMax(2);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    Assert.assertNotEquals(turnBefore, model.getCurrentTurn());
+  }
+
+  // Test AlphaBetaMiniMax in a mid-game state
+  @Test
+  public void testAlphaBetaMidGame() {
+    IReversiModel model = new ReversiModel(4);
+    model.move(2, 4, model.getCurrentTurn());
+    model.move(4, 1, model.getCurrentTurn());
+    IReversiStrategies strategy = new AlphaBetaMiniMax(3);
+    Player turnBefore = model.getCurrentTurn();
+    strategy.chooseNextMove(model, turnBefore);
+    Assert.assertNotEquals(turnBefore, model.getCurrentTurn());
+  }
+
+  // ---- AI vs AI Full Game Simulation Tests ----
+
+  // Test that two AsManyPiecesAsPossible AIs can play a full game to completion
+  @Test
+  public void testAIvsAIFullGameEasyVsEasy() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies black = new AsManyPiecesAsPossible();
+    IReversiStrategies white = new AsManyPiecesAsPossible();
+    int maxTurns = 100;
+    int turns = 0;
+    while (!model.gameOver() && turns < maxTurns) {
+      if (model.getCurrentTurn() == Player.BLACK) {
+        black.chooseNextMove(model, Player.BLACK);
+      } else {
+        white.chooseNextMove(model, Player.WHITE);
+      }
+      turns++;
+    }
+    Assert.assertTrue("AI vs AI game should complete", model.gameOver());
+    Assert.assertTrue("Game should complete in reasonable turns", turns < maxTurns);
+  }
+
+  // Test that MiniMax vs AsManyPiecesAsPossible can play a full game
+  @Test
+  public void testAIvsAIMiniMaxVsEasy() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies black = new MiniMax();
+    IReversiStrategies white = new AsManyPiecesAsPossible();
+    int maxTurns = 100;
+    int turns = 0;
+    while (!model.gameOver() && turns < maxTurns) {
+      if (model.getCurrentTurn() == Player.BLACK) {
+        black.chooseNextMove(model, Player.BLACK);
+      } else {
+        white.chooseNextMove(model, Player.WHITE);
+      }
+      turns++;
+    }
+    Assert.assertTrue("AI vs AI game should complete", model.gameOver());
+  }
+
+  // Test that AlphaBetaMiniMax vs AsManyPiecesAsPossible can play a full game
+  @Test
+  public void testAIvsAIAlphaBetaVsEasy() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies black = new AlphaBetaMiniMax(3);
+    IReversiStrategies white = new AsManyPiecesAsPossible();
+    int maxTurns = 100;
+    int turns = 0;
+    while (!model.gameOver() && turns < maxTurns) {
+      if (model.getCurrentTurn() == Player.BLACK) {
+        black.chooseNextMove(model, Player.BLACK);
+      } else {
+        white.chooseNextMove(model, Player.WHITE);
+      }
+      turns++;
+    }
+    Assert.assertTrue("AI vs AI game should complete", model.gameOver());
+  }
+
+  // Test CornersFirst vs AsManyPiecesAsPossible full game
+  @Test
+  public void testAIvsAICornersFirstVsEasy() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies black = new CornersFirst();
+    IReversiStrategies white = new AsManyPiecesAsPossible();
+    int maxTurns = 100;
+    int turns = 0;
+    while (!model.gameOver() && turns < maxTurns) {
+      if (model.getCurrentTurn() == Player.BLACK) {
+        black.chooseNextMove(model, Player.BLACK);
+      } else {
+        white.chooseNextMove(model, Player.WHITE);
+      }
+      turns++;
+    }
+    Assert.assertTrue("CornersFirst vs Easy game should complete", model.gameOver());
+  }
+
+  // Test AvoidNextToCorners vs AsManyPiecesAsPossible full game
+  @Test
+  public void testAIvsAIAvoidCornersVsEasy() {
+    IReversiModel model = new ReversiModel(4);
+    IReversiStrategies black = new AvoidNextToCorners();
+    IReversiStrategies white = new AsManyPiecesAsPossible();
+    int maxTurns = 100;
+    int turns = 0;
+    while (!model.gameOver() && turns < maxTurns) {
+      if (model.getCurrentTurn() == Player.BLACK) {
+        black.chooseNextMove(model, Player.BLACK);
+      } else {
+        white.chooseNextMove(model, Player.WHITE);
+      }
+      turns++;
+    }
+    Assert.assertTrue("AvoidCorners vs Easy game should complete", model.gameOver());
   }
 }
