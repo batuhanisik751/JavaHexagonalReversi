@@ -51,8 +51,8 @@ public final class Reversi {
       player2 = new AIPlayer(Player.WHITE, findStrategy(args[4]));
     }
 
-    IGraphicsView viewPlayer1 = new ReversiGraphicsView(model);
-    IGraphicsView viewPlayer2 = new ReversiGraphicsView(model);
+    IGraphicsView viewPlayer1 = new ReversiGraphicsView(model, Player.BLACK);
+    IGraphicsView viewPlayer2 = new ReversiGraphicsView(model, Player.WHITE);
     Controller controller1 = new Controller(model, player1, viewPlayer1);
     Controller controller2 = new Controller(model, player2, viewPlayer2);
     controller1.start();

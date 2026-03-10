@@ -25,15 +25,18 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   private final ReversiPanel reversiPanel;
   private final JLabel blackScoreLabel;
   private final JLabel whiteScoreLabel;
+  private final Player player;
+  private final JLabel turnLabel;
 
   /**
    * Constructs a new ReversiGraphicsView with the given Reversi model.
    * @param model The Reversi model to be displayed.
    */
-  public ReversiGraphicsView(IReadOnlyReversiModel model) {
+  public ReversiGraphicsView(IReadOnlyReversiModel model, Player player) {
     super();
     this.model = model;
-    setTitle("Reversi");
+    this.player = player;
+    setTitle("Reversi - " + (player == Player.BLACK ? "Black (X)" : "White (O)"));
     int windowSizeX = (int) ((model.getBoardSize() * 2) * ReversiPanel.HEX_WIDTH);
     int windowSizeY = (int) ((model.getBoardSize() * 2) * ReversiPanel.HEX_HEIGHT);
     setSize(windowSizeX, windowSizeY);
@@ -55,8 +58,13 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
     whiteScoreLabel.setForeground(Color.WHITE);
     whiteScoreLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
 
+    turnLabel = new JLabel();
+    turnLabel.setForeground(Color.YELLOW);
+    turnLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+
     scorePanel.add(blackScoreLabel);
     scorePanel.add(whiteScoreLabel);
+    scorePanel.add(turnLabel);
     this.add(scorePanel, BorderLayout.NORTH);
 
     JPanel buttonPanel = new JPanel();
@@ -71,7 +79,7 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
     setResizable(true);
     pack();
     setLocationRelativeTo(null);
-    updateScoreLabels();
+    updateStatusLabels();
     reversiPanel.requestFocus();
   }
 
@@ -90,16 +98,26 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
    */
   @Override
   public void refresh() {
-    updateScoreLabels();
+    updateStatusLabels();
     this.reversiPanel.repaint();
   }
 
   /**
-   * Updates the score labels with the current piece counts from the model.
+   * Updates the score labels and turn indicator with the current game state.
    */
-  private void updateScoreLabels() {
+  private void updateStatusLabels() {
     blackScoreLabel.setText("Black (X): " + model.getScore(Player.BLACK));
     whiteScoreLabel.setText("White (O): " + model.getScore(Player.WHITE));
+    if (model.gameOver()) {
+      turnLabel.setText("Game Over");
+      turnLabel.setForeground(Color.LIGHT_GRAY);
+    } else if (model.getCurrentTurn() == player) {
+      turnLabel.setText("Your Turn");
+      turnLabel.setForeground(Color.YELLOW);
+    } else {
+      turnLabel.setText("Waiting...");
+      turnLabel.setForeground(Color.LIGHT_GRAY);
+    }
   }
 
   /**
