@@ -30,6 +30,7 @@ public class Controller implements ViewListener {
   private final PlayerType playerType;
   private final GameHistory history;
   private IReversiModel lastSnapshot;
+  private Controller opponent;
 
   /**
    * Makes a Controller for a reversi model and player.
@@ -47,6 +48,14 @@ public class Controller implements ViewListener {
     this.history = history;
     view.setViewListener(this);
     view.makeVisible();
+  }
+
+  /**
+   * Sets the opponent controller so that AI moves can chain between players.
+   * @param opponent the other player's controller.
+   */
+  public void setOpponent(Controller opponent) {
+    this.opponent = opponent;
   }
 
   /**
@@ -69,10 +78,21 @@ public class Controller implements ViewListener {
           view.refresh();
           SoundManager.play("move");
           checkGameOver();
+          notifyOpponent();
         }
       });
       timer.setRepeats(false);
       timer.start();
+    }
+  }
+
+  /**
+   * Notifies the opponent controller to refresh its view and attempt its AI move.
+   */
+  private void notifyOpponent() {
+    if (opponent != null) {
+      opponent.view.refresh();
+      opponent.tryAIMove();
     }
   }
 
@@ -107,6 +127,7 @@ public class Controller implements ViewListener {
     view.refresh();
     SoundManager.play("move");
     checkGameOver();
+    notifyOpponent();
     tryAIMove();
   }
 
@@ -120,6 +141,7 @@ public class Controller implements ViewListener {
     view.refresh();
     SoundManager.play("pass");
     checkGameOver();
+    notifyOpponent();
     tryAIMove();
   }
 
