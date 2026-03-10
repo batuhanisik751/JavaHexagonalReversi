@@ -7,7 +7,6 @@ import cs3500.reversi.controller.PlayerType;
 import cs3500.reversi.model.IReversiModel;
 import cs3500.reversi.model.Player;
 import cs3500.reversi.model.ReversiModel;
-import cs3500.reversi.view.IGraphicsView;
 import cs3500.reversi.view.ReversiGraphicsView;
 import cs3500.reversi.strategy.IReversiStrategies;
 import cs3500.reversi.strategy.MiniMax;
@@ -28,6 +27,10 @@ public final class Reversi {
    *             Ex: (4 human ai strategy1), (4 human human), (3 ai strategy1 ai strategy4).
    */
   public static void main(String[] args) {
+    startGame(args);
+  }
+
+  private static void startGame(String[] args) {
     IReversiModel model = new ReversiModel(Integer.parseInt(args[0]));
     PlayerType player1 = new HumanPlayer(model, Player.BLACK);
     PlayerType player2 = new HumanPlayer(model, Player.WHITE);
@@ -51,8 +54,17 @@ public final class Reversi {
       player2 = new AIPlayer(Player.WHITE, findStrategy(args[4]));
     }
 
-    IGraphicsView viewPlayer1 = new ReversiGraphicsView(model, Player.BLACK);
-    IGraphicsView viewPlayer2 = new ReversiGraphicsView(model, Player.WHITE);
+    ReversiGraphicsView viewPlayer1 = new ReversiGraphicsView(model, Player.BLACK);
+    ReversiGraphicsView viewPlayer2 = new ReversiGraphicsView(model, Player.WHITE);
+
+    Runnable restart = () -> {
+      viewPlayer1.dispose();
+      viewPlayer2.dispose();
+      startGame(args);
+    };
+    viewPlayer1.setRestartAction(restart);
+    viewPlayer2.setRestartAction(restart);
+
     Controller controller1 = new Controller(model, player1, viewPlayer1);
     Controller controller2 = new Controller(model, player2, viewPlayer2);
     controller1.start();

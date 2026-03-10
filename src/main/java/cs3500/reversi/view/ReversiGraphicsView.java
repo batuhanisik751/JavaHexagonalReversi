@@ -27,6 +27,7 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   private final JLabel whiteScoreLabel;
   private final Player player;
   private final JLabel turnLabel;
+  private Runnable restartAction;
 
   /**
    * Constructs a new ReversiGraphicsView with the given Reversi model.
@@ -94,6 +95,14 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   }
 
   /**
+   * Sets the action to run when the user chooses "Play Again" at game over.
+   * @param restartAction the action that restarts the game.
+   */
+  public void setRestartAction(Runnable restartAction) {
+    this.restartAction = restartAction;
+  }
+
+  /**
    * Updates the view with the current state of the game.
    */
   @Override
@@ -155,9 +164,27 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
    */
   @Override
   public void gameOver(int blackScore, int whiteScore) {
-    String message = "Game Over!\nBlack Score: " + blackScore + "\nWhite Score: " + whiteScore;
-    JOptionPane.showMessageDialog(this, message,
-            "Game Over", JOptionPane.INFORMATION_MESSAGE);
+    String winner;
+    if (blackScore > whiteScore) {
+      winner = "Black (X) wins!";
+    } else if (whiteScore > blackScore) {
+      winner = "White (O) wins!";
+    } else {
+      winner = "It's a tie!";
+    }
+    String message = winner + "\n\nBlack Score: " + blackScore + "\nWhite Score: " + whiteScore;
+
+    String[] options = {"Play Again", "Quit"};
+    int choice = JOptionPane.showOptionDialog(
+            this, message, "Game Over",
+            JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
+            null, options, options[0]);
+
+    if (choice == 0 && restartAction != null) {
+      restartAction.run();
+    } else {
+      System.exit(0);
+    }
   }
 
   /**
