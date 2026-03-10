@@ -15,6 +15,8 @@ import cs3500.reversi.view.IGraphicsView;
 public class Controller implements ViewListener {
   private final IReversiModel model;
   private final IGraphicsView view;
+  private final Player player;
+  private IReversiModel lastSnapshot;
 
   /**
    * Makes a Controller for a reversi model and player.
@@ -24,6 +26,7 @@ public class Controller implements ViewListener {
    */
   public Controller(IReversiModel model, PlayerType player, IGraphicsView view) {
     this.model = model;
+    this.player = player.getPlayer();
     this.view = view;
     view.setViewListener(this);
     view.makeVisible();
@@ -38,6 +41,7 @@ public class Controller implements ViewListener {
 
   @Override
   public void onMove(int row, int col) {
+    IReversiModel undoSnapshot = model.copyModel();
     Player[][] before = snapshotBoard();
     try {
       model.move(row, col, model.getCurrentTurn());
@@ -46,6 +50,7 @@ public class Controller implements ViewListener {
       view.refresh();
       return;
     }
+    this.lastSnapshot = undoSnapshot;
     List<Coordinate> flipped = new ArrayList<>();
     for (int r = 0; r < model.getBoard().size(); r++) {
       for (int c = 0; c < model.getRow(r).size(); c++) {
@@ -66,9 +71,22 @@ public class Controller implements ViewListener {
   @Override
   public void onPass() {
     model.passTurn();
+    this.lastSnapshot = null;
     view.highlightLastMove(-1, -1, new ArrayList<>());
     view.refresh();
     checkGameOver();
+  }
+
+  @Override
+  public void onUndo() {
+    if (lastSnapshot == null) {
+      view.undoNotAvailableMessage();
+      return;
+    }
+    model.restoreFrom(lastSnapshot);
+    lastSnapshot = null;
+    view.highlightLastMove(-1, -1, new ArrayList<>());
+    view.refresh();
   }
 
   /**

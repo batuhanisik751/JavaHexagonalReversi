@@ -18,4 +18,9 @@ public interface ViewListener {
    * Called when the user passes their turn.
    */
   void onPass();
+
+  /**
+   * Called when the user requests to undo their last move.
+   */
+  void onUndo();
 }

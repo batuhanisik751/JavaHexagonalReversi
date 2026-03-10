@@ -55,4 +55,9 @@ public interface IGraphicsView {
    * @param flipped list of coordinates of pieces that were flipped.
    */
   void highlightLastMove(int placedRow, int placedCol, List<Coordinate> flipped);
+
+  /**
+   * Shows a message indicating that undo is not available.
+   */
+  void undoNotAvailableMessage();
 }

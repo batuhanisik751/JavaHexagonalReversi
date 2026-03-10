@@ -26,4 +26,10 @@ public interface IReversiModel extends IReadOnlyReversiModel {
    * @return a new independent copy of this model.
    */
   IReversiModel copyModel();
+
+  /**
+   * Restores this model's state from the given snapshot.
+   * @param snapshot the model state to restore from.
+   */
+  void restoreFrom(IReversiModel snapshot);
 }

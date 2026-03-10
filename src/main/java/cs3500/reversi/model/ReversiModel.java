@@ -225,6 +225,16 @@ public class ReversiModel implements IReversiModel {
     return new ReversiModel(this.boardSize, this.copyBoard(), this.currentTurn);
   }
 
+  @Override
+  public void restoreFrom(IReversiModel snapshot) {
+    this.currentTurn = snapshot.getCurrentTurn();
+    for (int r = 0; r < this.board.size(); r++) {
+      for (int c = 0; c < this.board.get(r).size(); c++) {
+        this.board.get(r).get(c).setFilled(snapshot.getSpaceContent(r, c));
+      }
+    }
+  }
+
   private boolean gameOverByFullBoard() {
     for (int row = 0; row < getBoard().size(); row++) {
       for (int col = 0; col < getRow(row).size(); col++) {

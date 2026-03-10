@@ -31,6 +31,7 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   private final Player player;
   private final JLabel turnLabel;
   private Runnable restartAction;
+  private ViewListener viewListener;
 
   /**
    * Constructs a new ReversiGraphicsView with the given Reversi model.
@@ -74,6 +75,13 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
     JPanel buttonPanel = new JPanel();
     buttonPanel.setLayout(new FlowLayout());
     this.add(buttonPanel, BorderLayout.SOUTH);
+    JButton undoButton = new JButton("Undo");
+    undoButton.addActionListener((ActionEvent e) -> {
+      if (viewListener != null) {
+        viewListener.onUndo();
+      }
+    });
+    buttonPanel.add(undoButton);
     JButton quitButton = new JButton("Quit");
     quitButton.addActionListener((ActionEvent e) -> {
       System.exit(0);
@@ -94,6 +102,7 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
    */
   @Override
   public void setViewListener(ViewListener listener) {
+    this.viewListener = listener;
     this.reversiPanel.setViewListener(listener);
   }
 
@@ -203,5 +212,11 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   @Override
   public void highlightLastMove(int placedRow, int placedCol, List<Coordinate> flipped) {
     this.reversiPanel.setHighlights(placedRow, placedCol, flipped);
+  }
+
+  @Override
+  public void undoNotAvailableMessage() {
+    JOptionPane.showMessageDialog(this, "No move to undo.",
+            "Undo Not Available", JOptionPane.INFORMATION_MESSAGE);
   }
 }
