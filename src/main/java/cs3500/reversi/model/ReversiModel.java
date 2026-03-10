@@ -257,11 +257,7 @@ public class ReversiModel implements IReversiModel {
   }
 
   private boolean gameOverByNoValidMoves() {
-    if (noValidMoves(currentTurn)) {
-      changeTurn();
-      return noValidMoves(currentTurn);
-    }
-    return false;
+    return noValidMoves(Player.BLACK) && noValidMoves(Player.WHITE);
   }
 
   private void initBoard(int boardSize) {

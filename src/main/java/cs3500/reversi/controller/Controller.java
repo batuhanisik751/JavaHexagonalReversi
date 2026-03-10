@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JFileChooser;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -237,8 +238,11 @@ public class Controller implements ViewListener {
   private void checkGameOver() {
     if (model.gameOver()) {
       SoundManager.play("gameOver");
-      view.gameOver(model.getOpponentScore(Player.WHITE),
-              model.getOpponentScore(Player.BLACK));
+      // Defer the blocking modal dialog so the current callback can finish
+      // and notifyOpponent() can update the other view before we block the EDT.
+      SwingUtilities.invokeLater(() ->
+              view.gameOver(model.getOpponentScore(Player.WHITE),
+                      model.getOpponentScore(Player.BLACK)));
     }
   }
 }
