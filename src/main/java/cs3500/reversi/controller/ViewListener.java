@@ -23,4 +23,14 @@ public interface ViewListener {
    * Called when the user requests to undo their last move.
    */
   void onUndo();
+
+  /**
+   * Called when the user requests to save the game.
+   */
+  void onSave();
+
+  /**
+   * Called when the user requests to load a saved game.
+   */
+  void onLoad();
 }

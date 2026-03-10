@@ -32,4 +32,12 @@ public interface IReversiModel extends IReadOnlyReversiModel {
    * @param snapshot the model state to restore from.
    */
   void restoreFrom(IReversiModel snapshot);
+
+  /**
+   * Loads board state from raw data. Sets the current turn and fills each space
+   * from the given 2D array (null for empty spaces).
+   * @param currentTurn the player whose turn it is.
+   * @param boardState 2D array of Player values matching the board dimensions.
+   */
+  void loadState(Player currentTurn, Player[][] boardState);
 }

@@ -187,6 +187,12 @@ public class ReversiPanel extends JPanel implements MouseListener, KeyListener {
       case 'u':
         viewListener.onUndo();
         break;
+      case 's':
+        viewListener.onSave();
+        break;
+      case 'l':
+        viewListener.onLoad();
+        break;
       case KeyEvent.VK_ENTER:
         viewListener.onMove(selectedRow, selectedCol);
         break;

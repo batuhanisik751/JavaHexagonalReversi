@@ -67,4 +67,20 @@ public interface IGraphicsView {
    * @param records the list of move records to display.
    */
   void updateHistory(List<MoveRecord> records);
+
+  /**
+   * Shows a message indicating the game was saved successfully.
+   */
+  void showSaveSuccess();
+
+  /**
+   * Shows a message indicating the game was loaded successfully.
+   */
+  void showLoadSuccess();
+
+  /**
+   * Shows an error message related to file operations.
+   * @param message the error message to display.
+   */
+  void showFileError(String message);
 }

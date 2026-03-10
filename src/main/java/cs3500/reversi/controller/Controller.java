@@ -1,12 +1,20 @@
 package cs3500.reversi.controller;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import cs3500.reversi.history.GameHistory;
 import cs3500.reversi.model.Coordinate;
 import cs3500.reversi.model.IReversiModel;
 import cs3500.reversi.model.Player;
+import cs3500.reversi.persistence.GameLoader;
+import cs3500.reversi.persistence.GameSaver;
+import cs3500.reversi.persistence.LoadResult;
 import cs3500.reversi.view.IGraphicsView;
 
 /**
@@ -114,6 +122,50 @@ public class Controller implements ViewListener {
       }
     }
     return snapshot;
+  }
+
+  @Override
+  public void onSave() {
+    JFileChooser chooser = new JFileChooser();
+    chooser.setFileFilter(new FileNameExtensionFilter("Reversi Save (.reversi)", "reversi"));
+    if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+      try {
+        File file = chooser.getSelectedFile();
+        if (!file.getName().endsWith(".reversi")) {
+          file = new File(file.getAbsolutePath() + ".reversi");
+        }
+        GameSaver.save(model, history, file);
+        view.showSaveSuccess();
+      } catch (IOException e) {
+        view.showFileError("Failed to save: " + e.getMessage());
+      }
+    }
+  }
+
+  @Override
+  public void onLoad() {
+    JFileChooser chooser = new JFileChooser();
+    chooser.setFileFilter(new FileNameExtensionFilter("Reversi Save (.reversi)", "reversi"));
+    if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+      try {
+        LoadResult result = GameLoader.load(chooser.getSelectedFile());
+        if (result.getBoardSize() != model.getBoardSize()) {
+          view.showFileError("Save file board size (" + result.getBoardSize()
+                  + ") doesn't match current game (" + model.getBoardSize() + ").");
+          return;
+        }
+        model.loadState(result.getCurrentTurn(), result.getBoardState());
+        this.lastSnapshot = null;
+        history.clear();
+        history.loadRecords(result.getHistory());
+        view.updateHistory(history.getRecords());
+        view.highlightLastMove(-1, -1, new ArrayList<>());
+        view.refresh();
+        view.showLoadSuccess();
+      } catch (IOException e) {
+        view.showFileError("Failed to load: " + e.getMessage());
+      }
+    }
   }
 
   private void checkGameOver() {

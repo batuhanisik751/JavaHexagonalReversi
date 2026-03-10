@@ -235,6 +235,16 @@ public class ReversiModel implements IReversiModel {
     }
   }
 
+  @Override
+  public void loadState(Player currentTurn, Player[][] boardState) {
+    this.currentTurn = currentTurn;
+    for (int r = 0; r < this.board.size(); r++) {
+      for (int c = 0; c < this.board.get(r).size(); c++) {
+        this.board.get(r).get(c).setFilled(boardState[r][c]);
+      }
+    }
+  }
+
   private boolean gameOverByFullBoard() {
     for (int row = 0; row < getBoard().size(); row++) {
       for (int col = 0; col < getRow(row).size(); col++) {

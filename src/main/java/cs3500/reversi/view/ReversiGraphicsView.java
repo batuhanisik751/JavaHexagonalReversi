@@ -77,6 +77,20 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
     JPanel buttonPanel = new JPanel();
     buttonPanel.setLayout(new FlowLayout());
     this.add(buttonPanel, BorderLayout.SOUTH);
+    JButton saveButton = new JButton("Save");
+    saveButton.addActionListener((ActionEvent e) -> {
+      if (viewListener != null) {
+        viewListener.onSave();
+      }
+    });
+    buttonPanel.add(saveButton);
+    JButton loadButton = new JButton("Load");
+    loadButton.addActionListener((ActionEvent e) -> {
+      if (viewListener != null) {
+        viewListener.onLoad();
+      }
+    });
+    buttonPanel.add(loadButton);
     JButton undoButton = new JButton("Undo");
     undoButton.addActionListener((ActionEvent e) -> {
       if (viewListener != null) {
@@ -228,5 +242,23 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   @Override
   public void updateHistory(List<MoveRecord> records) {
     this.historyPanel.updateHistory(records);
+  }
+
+  @Override
+  public void showSaveSuccess() {
+    JOptionPane.showMessageDialog(this, "Game saved successfully.",
+            "Save", JOptionPane.INFORMATION_MESSAGE);
+  }
+
+  @Override
+  public void showLoadSuccess() {
+    JOptionPane.showMessageDialog(this, "Game loaded successfully.",
+            "Load", JOptionPane.INFORMATION_MESSAGE);
+  }
+
+  @Override
+  public void showFileError(String message) {
+    JOptionPane.showMessageDialog(this, message,
+            "File Error", JOptionPane.ERROR_MESSAGE);
   }
 }

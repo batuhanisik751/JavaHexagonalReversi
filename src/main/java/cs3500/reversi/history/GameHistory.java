@@ -45,6 +45,15 @@ public final class GameHistory {
   }
 
   /**
+   * Replaces all records with the given list. Used when loading a saved game.
+   * @param loaded the records to load.
+   */
+  public void loadRecords(List<MoveRecord> loaded) {
+    records.clear();
+    records.addAll(loaded);
+  }
+
+  /**
    * Returns an unmodifiable copy of the recorded moves.
    */
   public List<MoveRecord> getRecords() {
