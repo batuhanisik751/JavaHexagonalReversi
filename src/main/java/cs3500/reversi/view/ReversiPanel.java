@@ -2,7 +2,6 @@ package cs3500.reversi.view;
 
 import javax.swing.JPanel;
 
-import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
@@ -29,6 +28,7 @@ public class ReversiPanel extends JPanel implements MouseListener, KeyListener {
   static final double HEX_HEIGHT = 1.5 * HEX_SIZE;
 
   private final IReadOnlyReversiModel model;
+  private final Theme theme;
   private ViewListener viewListener;
   private int selectedRow = -1;
   private int selectedCol = -1;
@@ -37,11 +37,13 @@ public class ReversiPanel extends JPanel implements MouseListener, KeyListener {
   private List<Coordinate> highlightFlipped = new ArrayList<>();
 
   /**
-   * Constructs a new ReversiPanel with the specified Reversi model.
+   * Constructs a new ReversiPanel with the specified Reversi model and theme.
    * @param model The Reversi model to be rendered (read-only access).
+   * @param theme The color theme to use for rendering.
    */
-  public ReversiPanel(IReadOnlyReversiModel model) {
+  public ReversiPanel(IReadOnlyReversiModel model, Theme theme) {
     this.model = model;
+    this.theme = theme;
     this.addMouseListener(this);
     this.addKeyListener(this);
     this.setFocusable(true);
@@ -81,7 +83,7 @@ public class ReversiPanel extends JPanel implements MouseListener, KeyListener {
   protected void paintComponent(Graphics g) {
     super.paintComponent(g);
     Graphics2D g2d = (Graphics2D) g;
-    setBackground(Color.DARK_GRAY);
+    setBackground(theme.boardBackground());
 
     for (int r = 0; r < model.getBoard().size(); r++) {
       for (int c = 0; c < model.getRow(r).size(); c++) {
@@ -90,40 +92,40 @@ public class ReversiPanel extends JPanel implements MouseListener, KeyListener {
         double centerY = r * HEX_HEIGHT + HEX_HEIGHT;
 
         Hexagon hex = new Hexagon(centerX, centerY, HEX_SIZE);
-        g2d.setColor(Color.WHITE);
+        g2d.setColor(theme.hexBorder());
         g2d.draw(hex);
 
         if (!(r == selectedRow && c == selectedCol)) {
-          g2d.setColor(Color.GRAY);
+          g2d.setColor(theme.hexFill());
           g2d.fill(hex);
-          g2d.setColor(Color.BLACK);
+          g2d.setColor(theme.hexBorder());
           g2d.draw(hex);
           if (model.getSpaceContent(r, c) == Player.BLACK) {
-            g2d.setColor(Color.BLACK);
+            g2d.setColor(theme.blackPiece());
             g2d.fillOval((int) (centerX - HEX_SIZE / 4), (int) (centerY - HEX_SIZE / 4),
                     HEX_SIZE / 2, HEX_SIZE / 2);
           } else if (model.getSpaceContent(r, c) == Player.WHITE) {
-            g2d.setColor(Color.WHITE);
+            g2d.setColor(theme.whitePiece());
             g2d.fillOval((int) (centerX - HEX_SIZE / 4), (int) (centerY - HEX_SIZE / 4),
                     HEX_SIZE / 2, HEX_SIZE / 2);
           } else {
-            g2d.setColor(Color.GRAY);
+            g2d.setColor(theme.hexFill());
             g2d.fill(hex);
-            g2d.setColor(Color.BLACK);
+            g2d.setColor(theme.hexBorder());
             g2d.draw(hex);
           }
           // Draw highlight ring for last move
           if (r == highlightPlacedRow && c == highlightPlacedCol) {
-            g2d.setColor(new Color(0, 200, 0)); // green for placed piece
+            g2d.setColor(theme.placedHighlight());
             g2d.draw(hex);
           } else if (isHighlightedFlip(r, c)) {
-            g2d.setColor(new Color(255, 165, 0)); // orange for flipped pieces
+            g2d.setColor(theme.flippedHighlight());
             g2d.draw(hex);
           }
         } else {
           if (model.getSpace(r, c).isEmpty()
                   && model.isValidMove(r, c, model.getCurrentTurn())) {
-            g2d.setColor(Color.CYAN);
+            g2d.setColor(theme.selectedHex());
             g2d.fill(hex);
           }
         }

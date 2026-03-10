@@ -15,7 +15,11 @@ import cs3500.reversi.strategy.CornersFirst;
 import cs3500.reversi.strategy.AvoidNextToCorners;
 import cs3500.reversi.strategy.AsManyPiecesAsPossible;
 import cs3500.reversi.strategy.DeepMiniMax;
+import cs3500.reversi.view.ClassicTheme;
+import cs3500.reversi.view.DarkTheme;
+import cs3500.reversi.view.HighContrastTheme;
 import cs3500.reversi.view.SetupDialog;
+import cs3500.reversi.view.Theme;
 
 /**
  * The main class for running the Reversi game.
@@ -45,16 +49,18 @@ public final class Reversi {
     if (!dialog.isConfirmed()) {
       System.exit(0);
     }
-    startGameFromConfig(dialog.getBoardSize(), dialog.getPlayer1Type(), dialog.getPlayer2Type());
+    startGameFromConfig(dialog.getBoardSize(), dialog.getPlayer1Type(),
+            dialog.getPlayer2Type(), resolveTheme(dialog.getThemeName()));
   }
 
-  private static void startGameFromConfig(int boardSize, String p1Type, String p2Type) {
+  private static void startGameFromConfig(int boardSize, String p1Type, String p2Type,
+                                           Theme theme) {
     IReversiModel model = new ReversiModel(boardSize);
     PlayerType player1 = createPlayer(model, Player.BLACK, p1Type);
     PlayerType player2 = createPlayer(model, Player.WHITE, p2Type);
 
-    ReversiGraphicsView viewPlayer1 = new ReversiGraphicsView(model, Player.BLACK);
-    ReversiGraphicsView viewPlayer2 = new ReversiGraphicsView(model, Player.WHITE);
+    ReversiGraphicsView viewPlayer1 = new ReversiGraphicsView(model, Player.BLACK, theme);
+    ReversiGraphicsView viewPlayer2 = new ReversiGraphicsView(model, Player.WHITE, theme);
 
     Runnable restart = () -> {
       viewPlayer1.dispose();
@@ -103,8 +109,9 @@ public final class Reversi {
       player2 = new AIPlayer(Player.WHITE, findStrategy(args[4]));
     }
 
-    ReversiGraphicsView viewPlayer1 = new ReversiGraphicsView(model, Player.BLACK);
-    ReversiGraphicsView viewPlayer2 = new ReversiGraphicsView(model, Player.WHITE);
+    Theme defaultTheme = new DarkTheme();
+    ReversiGraphicsView viewPlayer1 = new ReversiGraphicsView(model, Player.BLACK, defaultTheme);
+    ReversiGraphicsView viewPlayer2 = new ReversiGraphicsView(model, Player.WHITE, defaultTheme);
 
     Runnable restart = () -> {
       viewPlayer1.dispose();
@@ -121,6 +128,17 @@ public final class Reversi {
     controller2.start();
   }
 
+
+  private static Theme resolveTheme(String name) {
+    switch (name) {
+      case "classic":
+        return new ClassicTheme();
+      case "highcontrast":
+        return new HighContrastTheme();
+      default:
+        return new DarkTheme();
+    }
+  }
 
   // gets the corresponding strategy to what is being inputted
   private static IReversiStrategies findStrategy(String strategy) {

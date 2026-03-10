@@ -7,7 +7,6 @@ import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JToggleButton;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.BorderLayout;
@@ -33,42 +32,46 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   private final JLabel whiteScoreLabel;
   private final Player player;
   private final JLabel turnLabel;
+  private final Theme theme;
   private final HistoryPanel historyPanel;
   private Runnable restartAction;
   private ViewListener viewListener;
 
   /**
-   * Constructs a new ReversiGraphicsView with the given Reversi model.
+   * Constructs a new ReversiGraphicsView with the given Reversi model and theme.
    * @param model The Reversi model to be displayed.
+   * @param player The player this view belongs to.
+   * @param theme The color theme to apply.
    */
-  public ReversiGraphicsView(IReadOnlyReversiModel model, Player player) {
+  public ReversiGraphicsView(IReadOnlyReversiModel model, Player player, Theme theme) {
     super();
     this.model = model;
     this.player = player;
+    this.theme = theme;
     setTitle("Reversi - " + (player == Player.BLACK ? "Black (X)" : "White (O)"));
     int windowSizeX = (int) ((model.getBoardSize() * 2) * ReversiPanel.HEX_WIDTH);
     int windowSizeY = (int) ((model.getBoardSize() * 2) * ReversiPanel.HEX_HEIGHT);
     setSize(windowSizeX, windowSizeY);
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-    reversiPanel = new ReversiPanel(model);
-    reversiPanel.setBackground(Color.BLACK);
+    reversiPanel = new ReversiPanel(model, theme);
+    reversiPanel.setBackground(theme.boardBackground());
     reversiPanel.setPreferredSize(new Dimension(windowSizeX, windowSizeY));
     this.add(reversiPanel, BorderLayout.CENTER);
 
     JPanel scorePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 5));
-    scorePanel.setBackground(Color.DARK_GRAY);
+    scorePanel.setBackground(theme.scorePanelBg());
 
     blackScoreLabel = new JLabel();
-    blackScoreLabel.setForeground(Color.WHITE);
+    blackScoreLabel.setForeground(theme.scoreLabelFg());
     blackScoreLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
 
     whiteScoreLabel = new JLabel();
-    whiteScoreLabel.setForeground(Color.WHITE);
+    whiteScoreLabel.setForeground(theme.scoreLabelFg());
     whiteScoreLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
 
     turnLabel = new JLabel();
-    turnLabel.setForeground(Color.YELLOW);
+    turnLabel.setForeground(theme.turnLabelActive());
     turnLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
 
     scorePanel.add(blackScoreLabel);
@@ -158,13 +161,13 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
     whiteScoreLabel.setText("White (O): " + model.getScore(Player.WHITE));
     if (model.gameOver()) {
       turnLabel.setText("Game Over");
-      turnLabel.setForeground(Color.LIGHT_GRAY);
+      turnLabel.setForeground(theme.turnLabelInactive());
     } else if (model.getCurrentTurn() == player) {
       turnLabel.setText("Your Turn");
-      turnLabel.setForeground(Color.YELLOW);
+      turnLabel.setForeground(theme.turnLabelActive());
     } else {
       turnLabel.setText("Waiting...");
-      turnLabel.setForeground(Color.LIGHT_GRAY);
+      turnLabel.setForeground(theme.turnLabelInactive());
     }
   }
 

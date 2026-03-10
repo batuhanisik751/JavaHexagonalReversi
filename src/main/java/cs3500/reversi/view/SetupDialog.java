@@ -27,10 +27,12 @@ public class SetupDialog extends JDialog {
   private static final Font FIELD_FONT = new Font("SansSerif", Font.PLAIN, 14);
   private static final String[] PLAYER_OPTIONS =
           {"Human", "AI - Easy", "AI - Medium", "AI - Hard"};
+  private static final String[] THEME_OPTIONS = {"Dark", "Classic Green", "High Contrast"};
 
   private final JSpinner boardSizeSpinner;
   private final JComboBox<String> player1Combo;
   private final JComboBox<String> player2Combo;
+  private final JComboBox<String> themeCombo;
   private boolean confirmed;
 
   /**
@@ -92,6 +94,17 @@ public class SetupDialog extends JDialog {
     gbc.gridx = 1;
     content.add(player2Combo, gbc);
 
+    // Theme
+    gbc.gridx = 0;
+    gbc.gridy = 4;
+    content.add(styledLabel("Theme:"), gbc);
+
+    themeCombo = new JComboBox<>(THEME_OPTIONS);
+    themeCombo.setFont(FIELD_FONT);
+    themeCombo.setPreferredSize(new Dimension(180, 30));
+    gbc.gridx = 1;
+    content.add(themeCombo, gbc);
+
     // Start button
     JButton startButton = new JButton("Start Game");
     startButton.setFont(LABEL_FONT);
@@ -105,7 +118,7 @@ public class SetupDialog extends JDialog {
     buttonPanel.setBackground(BG);
     buttonPanel.add(startButton);
     gbc.gridx = 0;
-    gbc.gridy = 4;
+    gbc.gridy = 5;
     gbc.gridwidth = 2;
     gbc.insets = new Insets(16, 12, 12, 12);
     content.add(buttonPanel, gbc);
@@ -150,6 +163,21 @@ public class SetupDialog extends JDialog {
    */
   public String getPlayer2Type() {
     return parsePlayerType((String) player2Combo.getSelectedItem());
+  }
+
+  /**
+   * Returns the selected theme name: "dark", "classic", or "highcontrast".
+   */
+  public String getThemeName() {
+    String selection = (String) themeCombo.getSelectedItem();
+    switch (selection) {
+      case "Classic Green":
+        return "classic";
+      case "High Contrast":
+        return "highcontrast";
+      default:
+        return "dark";
+    }
   }
 
   private String parsePlayerType(String selection) {
