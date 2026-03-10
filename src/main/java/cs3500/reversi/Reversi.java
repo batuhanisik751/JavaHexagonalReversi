@@ -15,6 +15,7 @@ import cs3500.reversi.strategy.CornersFirst;
 import cs3500.reversi.strategy.AvoidNextToCorners;
 import cs3500.reversi.strategy.AsManyPiecesAsPossible;
 import cs3500.reversi.strategy.DeepMiniMax;
+import cs3500.reversi.view.SetupDialog;
 
 /**
  * The main class for running the Reversi game.
@@ -23,14 +24,59 @@ public final class Reversi {
 
   /**
    * The main method to initiate and run the Reversi game with a graphical view.
-   * @param args Command line arguments must be in the format of (boardsize player player) where
+   * If no arguments are provided, a setup dialog is shown.
+   * @param args Optional command line arguments in the format (boardsize player player) where
    *             player is either "human" or "ai". If "ai" is picked, then it must be followed by a
    *             difficulty ("easy", "medium", "hard") or legacy strategy name
    *             ("strategy1", "strategy2", "strategy3", "strategy4").
    *             Ex: (4 human ai easy), (4 human human), (3 ai medium ai hard).
    */
   public static void main(String[] args) {
-    startGame(args);
+    if (args.length > 0) {
+      startGame(args);
+    } else {
+      showSetupAndStart();
+    }
+  }
+
+  private static void showSetupAndStart() {
+    SetupDialog dialog = new SetupDialog();
+    dialog.setVisible(true);
+    if (!dialog.isConfirmed()) {
+      System.exit(0);
+    }
+    startGameFromConfig(dialog.getBoardSize(), dialog.getPlayer1Type(), dialog.getPlayer2Type());
+  }
+
+  private static void startGameFromConfig(int boardSize, String p1Type, String p2Type) {
+    IReversiModel model = new ReversiModel(boardSize);
+    PlayerType player1 = createPlayer(model, Player.BLACK, p1Type);
+    PlayerType player2 = createPlayer(model, Player.WHITE, p2Type);
+
+    ReversiGraphicsView viewPlayer1 = new ReversiGraphicsView(model, Player.BLACK);
+    ReversiGraphicsView viewPlayer2 = new ReversiGraphicsView(model, Player.WHITE);
+
+    Runnable restart = () -> {
+      viewPlayer1.dispose();
+      viewPlayer2.dispose();
+      showSetupAndStart();
+    };
+    viewPlayer1.setRestartAction(restart);
+    viewPlayer2.setRestartAction(restart);
+
+    GameHistory history = new GameHistory();
+    Controller controller1 = new Controller(model, player1, viewPlayer1, history);
+    Controller controller2 = new Controller(model, player2, viewPlayer2, history);
+    controller1.start();
+    controller2.start();
+  }
+
+  private static PlayerType createPlayer(IReversiModel model, Player color, String type) {
+    if (type.equals("human")) {
+      return new HumanPlayer(model, color);
+    } else {
+      return new AIPlayer(color, findStrategy(type));
+    }
   }
 
   private static void startGame(String[] args) {
