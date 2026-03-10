@@ -1,18 +1,21 @@
 package cs3500.reversi.view;
 
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 
 import cs3500.reversi.controller.ViewListener;
 import cs3500.reversi.model.IReadOnlyReversiModel;
+import cs3500.reversi.model.Player;
 
 /**
  * Represents the graphical view of the Reversi game.
@@ -20,6 +23,8 @@ import cs3500.reversi.model.IReadOnlyReversiModel;
 public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   private final IReadOnlyReversiModel model;
   private final ReversiPanel reversiPanel;
+  private final JLabel blackScoreLabel;
+  private final JLabel whiteScoreLabel;
 
   /**
    * Constructs a new ReversiGraphicsView with the given Reversi model.
@@ -39,6 +44,21 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
     reversiPanel.setPreferredSize(new Dimension(windowSizeX, windowSizeY));
     this.add(reversiPanel, BorderLayout.CENTER);
 
+    JPanel scorePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 5));
+    scorePanel.setBackground(Color.DARK_GRAY);
+
+    blackScoreLabel = new JLabel();
+    blackScoreLabel.setForeground(Color.WHITE);
+    blackScoreLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+
+    whiteScoreLabel = new JLabel();
+    whiteScoreLabel.setForeground(Color.WHITE);
+    whiteScoreLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+
+    scorePanel.add(blackScoreLabel);
+    scorePanel.add(whiteScoreLabel);
+    this.add(scorePanel, BorderLayout.NORTH);
+
     JPanel buttonPanel = new JPanel();
     buttonPanel.setLayout(new FlowLayout());
     this.add(buttonPanel, BorderLayout.SOUTH);
@@ -51,6 +71,7 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
     setResizable(true);
     pack();
     setLocationRelativeTo(null);
+    updateScoreLabels();
     reversiPanel.requestFocus();
   }
 
@@ -69,7 +90,16 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
    */
   @Override
   public void refresh() {
+    updateScoreLabels();
     this.reversiPanel.repaint();
+  }
+
+  /**
+   * Updates the score labels with the current piece counts from the model.
+   */
+  private void updateScoreLabels() {
+    blackScoreLabel.setText("Black (X): " + model.getScore(Player.BLACK));
+    whiteScoreLabel.setText("White (O): " + model.getScore(Player.WHITE));
   }
 
   /**
