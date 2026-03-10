@@ -74,7 +74,12 @@ public class Controller implements ViewListener {
     if (playerType instanceof AIPlayer && model.getCurrentTurn() == player) {
       Timer timer = new Timer(300, e -> {
         if (!model.gameOver() && model.getCurrentTurn() == player) {
-          playerType.play(model);
+          try {
+            playerType.play(model);
+          } catch (Exception ex) {
+            // Strategy failed — fall back to passing so the game continues.
+            model.passTurn();
+          }
           view.refresh();
           SoundManager.play("move");
           checkGameOver();
