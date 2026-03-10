@@ -75,15 +75,18 @@ public class Controller implements ViewListener {
       Timer timer = new Timer(300, e -> {
         if (!model.gameOver() && model.getCurrentTurn() == player) {
           try {
-            playerType.play(model);
-          } catch (Exception ex) {
-            // Strategy failed — fall back to passing so the game continues.
-            model.passTurn();
+            try {
+              playerType.play(model);
+            } catch (Exception ex) {
+              // Strategy failed — fall back to passing so the game continues.
+              model.passTurn();
+            }
+            view.refresh();
+            SoundManager.play("move");
+            checkGameOver();
+          } finally {
+            notifyOpponent();
           }
-          view.refresh();
-          SoundManager.play("move");
-          checkGameOver();
-          notifyOpponent();
         }
       });
       timer.setRepeats(false);
@@ -103,6 +106,9 @@ public class Controller implements ViewListener {
 
   @Override
   public void onMove(int row, int col) {
+    if (playerType instanceof AIPlayer) {
+      return;
+    }
     IReversiModel undoSnapshot = model.copyModel();
     Player[][] before = snapshotBoard();
     try {
@@ -138,6 +144,9 @@ public class Controller implements ViewListener {
 
   @Override
   public void onPass() {
+    if (playerType instanceof AIPlayer) {
+      return;
+    }
     model.passTurn();
     this.lastSnapshot = null;
     history.recordPass(player);
