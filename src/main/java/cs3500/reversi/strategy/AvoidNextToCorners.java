@@ -51,6 +51,12 @@ public class AvoidNextToCorners implements IReversiStrategies {
     } else if (row == 1 || row == model.getBoard().size() - 2) {
       return (col == 0 || col == 1
               || col == model.getRow(row).size() - 1 || col == model.getRow(row).size() - 2);
+      // checks middle row (the widest row)
+    } else if (row == model.getBoardSize() - 1) {
+      return (col == 1 || col == model.getRow(row).size() - 2);
+      // checks rows next to the middle row
+    } else if (row == model.getBoardSize() || row == model.getBoardSize() - 2) {
+      return (col == 0 || col == model.getRow(row).size() - 1);
     }
     return false;
   }
