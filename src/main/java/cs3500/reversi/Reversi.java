@@ -8,7 +8,7 @@ import cs3500.reversi.history.GameHistory;
 import cs3500.reversi.model.IReversiModel;
 import cs3500.reversi.model.Player;
 import cs3500.reversi.model.ReversiModel;
-import cs3500.reversi.view.ReversiGraphicsView;
+import cs3500.reversi.view.legacy.ReversiGraphicsView;
 import cs3500.reversi.strategy.IReversiStrategies;
 import cs3500.reversi.strategy.MiniMax;
 import cs3500.reversi.strategy.CornersFirst;
@@ -16,11 +16,11 @@ import cs3500.reversi.strategy.AvoidNextToCorners;
 import cs3500.reversi.strategy.AsManyPiecesAsPossible;
 import cs3500.reversi.strategy.AlphaBetaMiniMax;
 
-import cs3500.reversi.view.ClassicTheme;
-import cs3500.reversi.view.DarkTheme;
-import cs3500.reversi.view.HighContrastTheme;
-import cs3500.reversi.view.SetupDialog;
-import cs3500.reversi.view.Theme;
+import cs3500.reversi.view.legacy.ClassicTheme;
+import cs3500.reversi.view.legacy.DarkTheme;
+import cs3500.reversi.view.legacy.HighContrastTheme;
+import cs3500.reversi.view.legacy.SetupDialog;
+import cs3500.reversi.view.legacy.Theme;
 
 /**
  * The main class for running the Reversi game.
@@ -37,11 +37,22 @@ public final class Reversi {
    *             Ex: (4 human ai easy), (4 human human), (3 ai medium ai hard).
    */
   public static void main(String[] args) {
-    if (args.length > 0) {
-      startGame(args);
-    } else {
-      showSetupAndStart();
+    // Check for --swing flag to use legacy Swing UI
+    for (String arg : args) {
+      if ("--swing".equals(arg)) {
+        String[] filtered = java.util.Arrays.stream(args)
+                .filter(a -> !"--swing".equals(a))
+                .toArray(String[]::new);
+        if (filtered.length > 0) {
+          startGame(filtered);
+        } else {
+          showSetupAndStart();
+        }
+        return;
+      }
     }
+    // Default: launch JavaFX UI
+    javafx.application.Application.launch(ReversiApp.class, args);
   }
 
   private static void showSetupAndStart() {

@@ -5,11 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JFileChooser;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
 import cs3500.reversi.history.GameHistory;
 import cs3500.reversi.model.Coordinate;
 import cs3500.reversi.model.IReversiModel;
@@ -73,7 +68,7 @@ public class Controller implements ViewListener {
       return;
     }
     if (playerType instanceof AIPlayer && model.getCurrentTurn() == player) {
-      Timer timer = new Timer(300, e -> {
+      view.scheduleDelayed(() -> {
         if (!model.gameOver() && model.getCurrentTurn() == player) {
           try {
             try {
@@ -89,9 +84,7 @@ public class Controller implements ViewListener {
             notifyOpponent();
           }
         }
-      });
-      timer.setRepeats(false);
-      timer.start();
+      }, 300);
     }
   }
 
@@ -193,14 +186,9 @@ public class Controller implements ViewListener {
 
   @Override
   public void onSave() {
-    JFileChooser chooser = new JFileChooser();
-    chooser.setFileFilter(new FileNameExtensionFilter("Reversi Save (.reversi)", "reversi"));
-    if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+    File file = view.showSaveFileChooser();
+    if (file != null) {
       try {
-        File file = chooser.getSelectedFile();
-        if (!file.getName().endsWith(".reversi")) {
-          file = new File(file.getAbsolutePath() + ".reversi");
-        }
         GameSaver.save(model, history, file);
         view.showSaveSuccess();
       } catch (IOException e) {
@@ -211,11 +199,10 @@ public class Controller implements ViewListener {
 
   @Override
   public void onLoad() {
-    JFileChooser chooser = new JFileChooser();
-    chooser.setFileFilter(new FileNameExtensionFilter("Reversi Save (.reversi)", "reversi"));
-    if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+    File file = view.showLoadFileChooser();
+    if (file != null) {
       try {
-        LoadResult result = GameLoader.load(chooser.getSelectedFile());
+        LoadResult result = GameLoader.load(file);
         if (result.getBoardSize() != model.getBoardSize()) {
           view.showFileError("Save file board size (" + result.getBoardSize()
                   + ") doesn't match current game (" + model.getBoardSize() + ").");
@@ -239,8 +226,8 @@ public class Controller implements ViewListener {
     if (model.gameOver()) {
       SoundManager.play("gameOver");
       // Defer the blocking modal dialog so the current callback can finish
-      // and notifyOpponent() can update the other view before we block the EDT.
-      SwingUtilities.invokeLater(() ->
+      // and notifyOpponent() can update the other view before we block the UI thread.
+      view.runOnUIThread(() ->
               view.gameOver(model.getOpponentScore(Player.WHITE),
                       model.getOpponentScore(Player.BLACK)));
     }

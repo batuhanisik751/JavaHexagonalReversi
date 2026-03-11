@@ -1,5 +1,6 @@
 package cs3500.reversi.view;
 
+import java.io.File;
 import java.util.List;
 
 import cs3500.reversi.controller.ViewListener;
@@ -83,4 +84,39 @@ public interface IGraphicsView {
    * @param message the error message to display.
    */
   void showFileError(String message);
+
+  /**
+   * Schedules an action to run after a delay on the UI thread.
+   * Used for AI move delays without blocking the UI.
+   * @param action the action to run.
+   * @param delayMs the delay in milliseconds.
+   */
+  default void scheduleDelayed(Runnable action, int delayMs) {
+    action.run();
+  }
+
+  /**
+   * Runs an action on the UI thread. Used for deferring modal dialogs
+   * so that the current callback can finish first.
+   * @param action the action to run on the UI thread.
+   */
+  default void runOnUIThread(Runnable action) {
+    action.run();
+  }
+
+  /**
+   * Shows a file chooser for saving and returns the selected file, or null if cancelled.
+   * @return the selected file, or null.
+   */
+  default File showSaveFileChooser() {
+    return null;
+  }
+
+  /**
+   * Shows a file chooser for loading and returns the selected file, or null if cancelled.
+   * @return the selected file, or null.
+   */
+  default File showLoadFileChooser() {
+    return null;
+  }
 }

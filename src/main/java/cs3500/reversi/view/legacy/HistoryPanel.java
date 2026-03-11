@@ -1,4 +1,4 @@
-package cs3500.reversi.view;
+package cs3500.reversi.view.legacy;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JLabel;

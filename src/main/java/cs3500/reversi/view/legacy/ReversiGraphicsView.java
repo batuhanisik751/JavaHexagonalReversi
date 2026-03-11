@@ -1,11 +1,15 @@
-package cs3500.reversi.view;
+package cs3500.reversi.view.legacy;
 
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JToggleButton;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import java.awt.Dimension;
 import java.awt.Font;
@@ -13,6 +17,7 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 
+import java.io.File;
 import java.util.List;
 
 import cs3500.reversi.audio.SoundManager;
@@ -21,6 +26,7 @@ import cs3500.reversi.history.MoveRecord;
 import cs3500.reversi.model.Coordinate;
 import cs3500.reversi.model.IReadOnlyReversiModel;
 import cs3500.reversi.model.Player;
+import cs3500.reversi.view.IGraphicsView;
 
 /**
  * Represents the graphical view of the Reversi game.
@@ -271,5 +277,41 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
   public void showFileError(String message) {
     JOptionPane.showMessageDialog(this, message,
             "File Error", JOptionPane.ERROR_MESSAGE);
+  }
+
+  @Override
+  public void scheduleDelayed(Runnable action, int delayMs) {
+    Timer timer = new Timer(delayMs, e -> action.run());
+    timer.setRepeats(false);
+    timer.start();
+  }
+
+  @Override
+  public void runOnUIThread(Runnable action) {
+    SwingUtilities.invokeLater(action);
+  }
+
+  @Override
+  public File showSaveFileChooser() {
+    JFileChooser chooser = new JFileChooser();
+    chooser.setFileFilter(new FileNameExtensionFilter("Reversi Save (.reversi)", "reversi"));
+    if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+      File file = chooser.getSelectedFile();
+      if (!file.getName().endsWith(".reversi")) {
+        file = new File(file.getAbsolutePath() + ".reversi");
+      }
+      return file;
+    }
+    return null;
+  }
+
+  @Override
+  public File showLoadFileChooser() {
+    JFileChooser chooser = new JFileChooser();
+    chooser.setFileFilter(new FileNameExtensionFilter("Reversi Save (.reversi)", "reversi"));
+    if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+      return chooser.getSelectedFile();
+    }
+    return null;
   }
 }
