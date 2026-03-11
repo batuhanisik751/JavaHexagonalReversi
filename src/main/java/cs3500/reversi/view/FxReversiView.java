@@ -207,6 +207,20 @@ public class FxReversiView implements IGraphicsView {
   @Override
   public void highlightLastMove(int placedRow, int placedCol, List<Coordinate> flipped) {
     reversiCanvas.setHighlights(placedRow, placedCol, flipped);
+    if (!flipped.isEmpty()) {
+      // The turn already switched after the move, so the mover is the opposite of current turn
+      Player mover = (model.getCurrentTurn() == Player.BLACK) ? Player.WHITE : Player.BLACK;
+      javafx.scene.paint.Color fromColor = (mover == Player.BLACK)
+              ? theme.whitePiece() : theme.blackPiece();
+      javafx.scene.paint.Color toColor = (mover == Player.BLACK)
+              ? theme.blackPiece() : theme.whitePiece();
+      reversiCanvas.startFlipAnimation(flipped, fromColor, toColor);
+    }
+  }
+
+  @Override
+  public void setAnimationSpeed(boolean fast) {
+    reversiCanvas.setFastAnimation(fast);
   }
 
   @Override

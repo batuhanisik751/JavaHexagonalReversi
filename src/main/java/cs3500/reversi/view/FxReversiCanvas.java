@@ -3,12 +3,17 @@ package cs3500.reversi.view;
 import java.util.ArrayList;
 import java.util.List;
 
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.util.Duration;
 
 import cs3500.reversi.controller.ViewListener;
 import cs3500.reversi.model.Coordinate;
@@ -33,6 +38,14 @@ class FxReversiCanvas extends Pane {
   private int highlightPlacedRow = -1;
   private int highlightPlacedCol = -1;
   private List<Coordinate> highlightFlipped = new ArrayList<>();
+
+  // Flip animation state
+  private List<Coordinate> animatingCells = new ArrayList<>();
+  private Color animFromColor;
+  private Color animToColor;
+  private double animProgress = 1.0;
+  private Timeline flipTimeline;
+  private boolean fastAnimation = false;
 
   /**
    * Constructs a new FxReversiCanvas with the specified model and theme.
@@ -82,6 +95,67 @@ class FxReversiCanvas extends Pane {
     this.highlightPlacedRow = -1;
     this.highlightPlacedCol = -1;
     this.highlightFlipped = new ArrayList<>();
+    if (flipTimeline != null) {
+      flipTimeline.stop();
+      flipTimeline = null;
+    }
+    animatingCells.clear();
+    animProgress = 1.0;
+  }
+
+  /**
+   * Sets whether animations should run at fast speed (for AI vs AI games).
+   */
+  void setFastAnimation(boolean fast) {
+    this.fastAnimation = fast;
+  }
+
+  /**
+   * Starts a flip animation on the given cells, transitioning from one color to another.
+   * @param flipped the cells to animate.
+   * @param fromColor the old piece color.
+   * @param toColor the new piece color.
+   */
+  void startFlipAnimation(List<Coordinate> flipped, Color fromColor, Color toColor) {
+    if (flipTimeline != null) {
+      flipTimeline.stop();
+    }
+    if (flipped.isEmpty()) {
+      draw();
+      return;
+    }
+
+    this.animatingCells = new ArrayList<>(flipped);
+    this.animFromColor = fromColor;
+    this.animToColor = toColor;
+    this.animProgress = 0.0;
+
+    int durationMs = fastAnimation ? 50 : 300;
+    int frameIntervalMs = 16;
+    int totalFrames = Math.max(1, durationMs / frameIntervalMs);
+    double progressPerFrame = 1.0 / totalFrames;
+
+    flipTimeline = new Timeline(new KeyFrame(Duration.millis(frameIntervalMs), e -> {
+      animProgress += progressPerFrame;
+      if (animProgress >= 1.0) {
+        animProgress = 1.0;
+        flipTimeline.stop();
+        animatingCells.clear();
+      }
+      draw();
+    }));
+    flipTimeline.setCycleCount(Animation.INDEFINITE);
+    flipTimeline.play();
+    draw();
+  }
+
+  private boolean isAnimatingCell(int row, int col) {
+    for (Coordinate coord : animatingCells) {
+      if (coord.getRow() == row && coord.getCol() == col) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -122,14 +196,21 @@ class FxReversiCanvas extends Pane {
         gc.strokePolygon(xs, ys, 6);
 
         // Draw pieces
-        if (model.getSpaceContent(r, c) == Player.BLACK) {
-          gc.setFill(theme.blackPiece());
-          gc.fillOval(centerX - HEX_SIZE / 4.0, centerY - HEX_SIZE / 4.0,
-                  HEX_SIZE / 2.0, HEX_SIZE / 2.0);
-        } else if (model.getSpaceContent(r, c) == Player.WHITE) {
-          gc.setFill(theme.whitePiece());
-          gc.fillOval(centerX - HEX_SIZE / 4.0, centerY - HEX_SIZE / 4.0,
-                  HEX_SIZE / 2.0, HEX_SIZE / 2.0);
+        Player content = model.getSpaceContent(r, c);
+        if (content != null) {
+          boolean isAnim = isAnimatingCell(r, c) && animProgress < 1.0;
+          if (isAnim) {
+            double scaleX = FlipAnimationUtils.computeFlipScaleX(animProgress);
+            Color pieceColor = (animProgress < 0.5) ? animFromColor : animToColor;
+            double pieceW = (HEX_SIZE / 2.0) * scaleX;
+            double pieceH = HEX_SIZE / 2.0;
+            gc.setFill(pieceColor);
+            gc.fillOval(centerX - pieceW / 2.0, centerY - pieceH / 2.0, pieceW, pieceH);
+          } else {
+            gc.setFill(content == Player.BLACK ? theme.blackPiece() : theme.whitePiece());
+            gc.fillOval(centerX - HEX_SIZE / 4.0, centerY - HEX_SIZE / 4.0,
+                    HEX_SIZE / 2.0, HEX_SIZE / 2.0);
+          }
         }
 
         // Draw highlight ring for last move

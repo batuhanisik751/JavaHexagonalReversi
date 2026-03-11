@@ -153,4 +153,12 @@ public interface IGraphicsView {
   default void setHistory(GameHistory history) {
     // no-op by default
   }
+
+  /**
+   * Sets whether flip animations should run at fast speed (for AI vs AI games).
+   * @param fast true for fast animations, false for normal speed.
+   */
+  default void setAnimationSpeed(boolean fast) {
+    // no-op by default
+  }
 }

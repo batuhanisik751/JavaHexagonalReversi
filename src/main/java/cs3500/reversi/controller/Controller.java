@@ -53,6 +53,10 @@ public class Controller implements ViewListener {
    */
   public void setOpponent(Controller opponent) {
     this.opponent = opponent;
+    if (this.playerType instanceof AIPlayer && opponent.playerType instanceof AIPlayer) {
+      this.view.setAnimationSpeed(true);
+      opponent.view.setAnimationSpeed(true);
+    }
   }
 
   /**
