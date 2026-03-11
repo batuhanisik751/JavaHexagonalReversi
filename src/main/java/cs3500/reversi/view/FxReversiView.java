@@ -250,6 +250,14 @@ public class FxReversiView implements IGraphicsView {
     return chooser.showOpenDialog(stage);
   }
 
+  @Override
+  public void setStatusMessage(String message) {
+    if (message != null) {
+      turnLabel.setText(message);
+      turnLabel.setStyle(labelStyle(theme.turnLabelInactive()));
+    }
+  }
+
   /**
    * Returns the stage owned by this view.
    */

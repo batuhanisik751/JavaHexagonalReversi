@@ -119,4 +119,12 @@ public interface IGraphicsView {
   default File showLoadFileChooser() {
     return null;
   }
+
+  /**
+   * Sets a status message displayed in the view (e.g. connection status for network play).
+   * @param message the status message to display, or null to clear.
+   */
+  default void setStatusMessage(String message) {
+    // no-op by default
+  }
 }

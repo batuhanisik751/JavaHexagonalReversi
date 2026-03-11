@@ -55,14 +55,16 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
     this.player = player;
     this.theme = theme;
     setTitle("Reversi - " + (player == Player.BLACK ? "Black (X)" : "White (O)"));
-    int windowSizeX = (int) ((model.getBoardSize() * 2) * ReversiPanel.HEX_WIDTH);
-    int windowSizeY = (int) ((model.getBoardSize() * 2) * ReversiPanel.HEX_HEIGHT);
-    setSize(windowSizeX, windowSizeY);
+    int boardWidth = (int) ((model.getBoardSize() * 2.5) * ReversiPanel.HEX_WIDTH);
+    int windowSizeY = (int) ((model.getBoardSize() * 2.5) * ReversiPanel.HEX_HEIGHT);
+    int historyWidth = 200;
+    setSize(boardWidth + historyWidth, windowSizeY);
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     reversiPanel = new ReversiPanel(model, theme);
     reversiPanel.setBackground(theme.boardBackground());
-    reversiPanel.setPreferredSize(new Dimension(windowSizeX, windowSizeY));
+    reversiPanel.setPreferredSize(new Dimension(boardWidth, windowSizeY));
+    reversiPanel.setMinimumSize(new Dimension(boardWidth, windowSizeY));
     this.add(reversiPanel, BorderLayout.CENTER);
 
     JPanel scorePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 5));
@@ -126,6 +128,7 @@ public class ReversiGraphicsView extends JFrame implements IGraphicsView {
 
     setResizable(true);
     pack();
+    setMinimumSize(getSize());
     setLocationRelativeTo(null);
     updateStatusLabels();
     reversiPanel.requestFocus();

@@ -1,17 +1,24 @@
 package cs3500.reversi;
 
+import java.io.IOException;
+import java.net.InetAddress;
+
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 import cs3500.reversi.controller.AIPlayer;
 import cs3500.reversi.controller.Controller;
 import cs3500.reversi.controller.HumanPlayer;
+import cs3500.reversi.controller.NetworkController;
 import cs3500.reversi.controller.PlayerType;
 import cs3500.reversi.history.GameHistory;
 import cs3500.reversi.model.IReversiModel;
 import cs3500.reversi.model.Player;
 import cs3500.reversi.model.ReversiModel;
+import cs3500.reversi.network.ReversiClient;
+import cs3500.reversi.network.ReversiServer;
 import cs3500.reversi.strategy.AlphaBetaMiniMax;
 import cs3500.reversi.strategy.AsManyPiecesAsPossible;
 import cs3500.reversi.strategy.AvoidNextToCorners;
@@ -43,12 +50,27 @@ public class ReversiApp extends Application {
       Platform.exit();
       return;
     }
-    startGameFromConfig(primaryStage, dialog.getBoardSize(), dialog.getPlayer1Type(),
-            dialog.getPlayer2Type(), resolveTheme(dialog.getThemeName()));
+
+    String mode = dialog.getGameMode();
+    FxTheme theme = resolveTheme(dialog.getThemeName());
+
+    switch (mode) {
+      case "host":
+        startHostGame(primaryStage, dialog.getBoardSize(), dialog.getPlayer1Type(),
+                dialog.getPort(), theme);
+        break;
+      case "join":
+        startJoinGame(primaryStage, dialog.getHostAddress(), dialog.getPort(), theme);
+        break;
+      default:
+        startLocalGame(primaryStage, dialog.getBoardSize(), dialog.getPlayer1Type(),
+                dialog.getPlayer2Type(), theme);
+        break;
+    }
   }
 
-  private void startGameFromConfig(Stage primaryStage, int boardSize,
-                                    String p1Type, String p2Type, FxTheme theme) {
+  private void startLocalGame(Stage primaryStage, int boardSize,
+                               String p1Type, String p2Type, FxTheme theme) {
     IReversiModel model = new ReversiModel(boardSize);
     PlayerType player1 = createPlayer(model, Player.BLACK, p1Type);
     PlayerType player2 = createPlayer(model, Player.WHITE, p2Type);
@@ -72,6 +94,84 @@ public class ReversiApp extends Application {
     controller2.setOpponent(controller1);
     controller1.start();
     controller2.start();
+  }
+
+  private void startHostGame(Stage primaryStage, int boardSize, String p1Type,
+                              int port, FxTheme theme) {
+    try {
+      // Start the server
+      ReversiServer server = new ReversiServer(port, boardSize, 60000);
+      server.start();
+      int actualPort = server.getLocalPort();
+
+      // Show waiting message with connection info
+      String localAddress;
+      try {
+        localAddress = InetAddress.getLocalHost().getHostAddress();
+      } catch (Exception e) {
+        localAddress = "localhost";
+      }
+
+      // Connect the host as a client via loopback
+      ReversiClient hostClient = new ReversiClient("localhost", actualPort);
+      Player hostColor = hostClient.connect();
+
+      // Create local model for rendering
+      IReversiModel localModel = new ReversiModel(boardSize);
+      FxReversiView hostView = new FxReversiView(localModel, hostColor, theme, primaryStage);
+      hostView.setStatusMessage("Hosting on " + localAddress + ":" + actualPort
+              + " — waiting for opponent...");
+      hostView.makeVisible();
+
+      // Set up restart to also stop server
+      hostView.setRestartAction(() -> {
+        server.stop();
+        hostClient.disconnect();
+        primaryStage.close();
+        showSetupAndStart(new Stage());
+      });
+
+      GameHistory history = new GameHistory();
+      new NetworkController(localModel, hostView, hostClient, history);
+      hostClient.startListening();
+
+    } catch (IOException e) {
+      showError("Failed to start server: " + e.getMessage());
+    }
+  }
+
+  private void startJoinGame(Stage primaryStage, String host, int port, FxTheme theme) {
+    try {
+      ReversiClient client = new ReversiClient(host, port);
+      Player myColor = client.connect();
+
+      // Create local model with the server's actual board size
+      int serverBoardSize = client.getServerBoardSize();
+      IReversiModel localModel = new ReversiModel(serverBoardSize);
+      FxReversiView view = new FxReversiView(localModel, myColor, theme, primaryStage);
+      view.setStatusMessage("Connected as " + myColor.name() + " — waiting for game to start...");
+
+      view.setRestartAction(() -> {
+        client.disconnect();
+        primaryStage.close();
+        showSetupAndStart(new Stage());
+      });
+
+      GameHistory history = new GameHistory();
+      NetworkController netController = new NetworkController(localModel, view, client, history);
+      netController.start();
+
+    } catch (IOException e) {
+      showError("Failed to connect: " + e.getMessage());
+    }
+  }
+
+  private void showError(String message) {
+    Alert alert = new Alert(Alert.AlertType.ERROR);
+    alert.setTitle("Network Error");
+    alert.setHeaderText(null);
+    alert.setContentText(message);
+    alert.showAndWait();
   }
 
   private PlayerType createPlayer(IReversiModel model, Player color, String type) {

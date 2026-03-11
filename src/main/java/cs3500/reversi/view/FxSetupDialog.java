@@ -10,6 +10,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -18,6 +19,7 @@ import javafx.stage.Stage;
 
 /**
  * A modal JavaFX setup dialog that lets users configure the game before starting.
+ * Supports local play, hosting a network game, or joining a network game.
  */
 public class FxSetupDialog {
   private static final String BG = "#555555";
@@ -30,12 +32,20 @@ public class FxSetupDialog {
   private static final String[] PLAYER_OPTIONS =
           {"Human", "AI - Easy", "AI - Medium", "AI - Hard"};
   private static final String[] THEME_OPTIONS = {"Dark", "Classic Green", "High Contrast"};
+  private static final String[] GAME_MODE_OPTIONS = {"Local Game", "Host Game (LAN)", "Join Game (LAN)"};
 
   private final Stage stage;
   private final Spinner<Integer> boardSizeSpinner;
   private final ComboBox<String> player1Combo;
   private final ComboBox<String> player2Combo;
   private final ComboBox<String> themeCombo;
+  private final ComboBox<String> gameModeCombo;
+  private final TextField portField;
+  private final TextField hostField;
+  private final Label player2Label;
+  private final Label boardSizeLabel;
+  private final Label portLabel;
+  private final Label hostLabel;
   private boolean confirmed;
 
   /**
@@ -59,6 +69,8 @@ public class FxSetupDialog {
     fieldCol.setPrefWidth(180);
     content.getColumnConstraints().addAll(labelCol, fieldCol);
 
+    int row = 0;
+
     // Title
     Label title = new Label("Game Setup");
     title.setStyle("-fx-text-fill: " + FG + "; -fx-font-family: 'SansSerif'; "
@@ -67,39 +79,66 @@ public class FxSetupDialog {
     title.setMaxWidth(Double.MAX_VALUE);
     GridPane.setColumnSpan(title, 2);
     GridPane.setHalignment(title, HPos.CENTER);
-    content.add(title, 0, 0);
+    content.add(title, 0, row++);
+
+    // Game Mode
+    content.add(styledLabel("Game Mode:"), 0, row);
+    gameModeCombo = new ComboBox<>(FXCollections.observableArrayList(GAME_MODE_OPTIONS));
+    gameModeCombo.setStyle(FIELD_STYLE);
+    gameModeCombo.setPrefWidth(180);
+    gameModeCombo.getSelectionModel().selectFirst();
+    gameModeCombo.setOnAction(e -> updateVisibility());
+    content.add(gameModeCombo, 1, row++);
 
     // Board Size
-    content.add(styledLabel("Board Size:"), 0, 1);
+    boardSizeLabel = styledLabel("Board Size:");
+    content.add(boardSizeLabel, 0, row);
     boardSizeSpinner = new Spinner<>(
             new SpinnerValueFactory.IntegerSpinnerValueFactory(3, 8, 4));
     boardSizeSpinner.setStyle(FIELD_STYLE);
     boardSizeSpinner.setPrefWidth(180);
-    content.add(boardSizeSpinner, 1, 1);
+    content.add(boardSizeSpinner, 1, row++);
 
     // Player 1
-    content.add(styledLabel("Player 1 (Black):"), 0, 2);
+    content.add(styledLabel("Player 1 (Black):"), 0, row);
     player1Combo = new ComboBox<>(FXCollections.observableArrayList(PLAYER_OPTIONS));
     player1Combo.setStyle(FIELD_STYLE);
     player1Combo.setPrefWidth(180);
     player1Combo.getSelectionModel().selectFirst();
-    content.add(player1Combo, 1, 2);
+    content.add(player1Combo, 1, row++);
 
     // Player 2
-    content.add(styledLabel("Player 2 (White):"), 0, 3);
+    player2Label = styledLabel("Player 2 (White):");
+    content.add(player2Label, 0, row);
     player2Combo = new ComboBox<>(FXCollections.observableArrayList(PLAYER_OPTIONS));
     player2Combo.setStyle(FIELD_STYLE);
     player2Combo.setPrefWidth(180);
     player2Combo.getSelectionModel().selectFirst();
-    content.add(player2Combo, 1, 3);
+    content.add(player2Combo, 1, row++);
+
+    // Port
+    portLabel = styledLabel("Port:");
+    content.add(portLabel, 0, row);
+    portField = new TextField("12345");
+    portField.setStyle(FIELD_STYLE);
+    portField.setPrefWidth(180);
+    content.add(portField, 1, row++);
+
+    // Host address (join mode only)
+    hostLabel = styledLabel("Host Address:");
+    content.add(hostLabel, 0, row);
+    hostField = new TextField("localhost");
+    hostField.setStyle(FIELD_STYLE);
+    hostField.setPrefWidth(180);
+    content.add(hostField, 1, row++);
 
     // Theme
-    content.add(styledLabel("Theme:"), 0, 4);
+    content.add(styledLabel("Theme:"), 0, row);
     themeCombo = new ComboBox<>(FXCollections.observableArrayList(THEME_OPTIONS));
     themeCombo.setStyle(FIELD_STYLE);
     themeCombo.setPrefWidth(180);
     themeCombo.getSelectionModel().selectFirst();
-    content.add(themeCombo, 1, 4);
+    content.add(themeCombo, 1, row++);
 
     // Start button
     Button startButton = new Button("Start Game");
@@ -114,10 +153,51 @@ public class FxSetupDialog {
     buttonBox.setAlignment(Pos.CENTER);
     buttonBox.setPadding(new Insets(16, 0, 4, 0));
     GridPane.setColumnSpan(buttonBox, 2);
-    content.add(buttonBox, 0, 5);
+    content.add(buttonBox, 0, row);
 
     Scene scene = new Scene(content);
     stage.setScene(scene);
+
+    // Initialize visibility
+    updateVisibility();
+  }
+
+  private void updateVisibility() {
+    String mode = gameModeCombo.getValue();
+    boolean isLocal = "Local Game".equals(mode);
+    boolean isJoin = "Join Game (LAN)".equals(mode);
+
+    // Board size: visible for local and host (server decides size)
+    boardSizeLabel.setVisible(!isJoin);
+    boardSizeSpinner.setVisible(!isJoin);
+    boardSizeLabel.setManaged(!isJoin);
+    boardSizeSpinner.setManaged(!isJoin);
+
+    // Player 2: only visible for local games
+    player2Label.setVisible(isLocal);
+    player2Combo.setVisible(isLocal);
+    player2Label.setManaged(isLocal);
+    player2Combo.setManaged(isLocal);
+
+    // Port: visible for host and join
+    portLabel.setVisible(!isLocal);
+    portField.setVisible(!isLocal);
+    portLabel.setManaged(!isLocal);
+    portField.setManaged(!isLocal);
+
+    // Host address: only visible for join
+    hostLabel.setVisible(isJoin);
+    hostField.setVisible(isJoin);
+    hostLabel.setManaged(isJoin);
+    hostField.setManaged(isJoin);
+
+    // Player 1 combo: hide for join (server assigns color)
+    player1Combo.setVisible(!isJoin);
+    player1Combo.setManaged(!isJoin);
+
+    if (stage.isShowing()) {
+      stage.sizeToScene();
+    }
   }
 
   /**
@@ -138,6 +218,19 @@ public class FxSetupDialog {
    */
   public boolean isConfirmed() {
     return confirmed;
+  }
+
+  /**
+   * Returns the game mode: "local", "host", or "join".
+   */
+  public String getGameMode() {
+    String selection = gameModeCombo.getValue();
+    if ("Host Game (LAN)".equals(selection)) {
+      return "host";
+    } else if ("Join Game (LAN)".equals(selection)) {
+      return "join";
+    }
+    return "local";
   }
 
   /**
@@ -174,6 +267,24 @@ public class FxSetupDialog {
       default:
         return "dark";
     }
+  }
+
+  /**
+   * Returns the port number for network play.
+   */
+  public int getPort() {
+    try {
+      return Integer.parseInt(portField.getText().trim());
+    } catch (NumberFormatException e) {
+      return 12345;
+    }
+  }
+
+  /**
+   * Returns the host address for joining a network game.
+   */
+  public String getHostAddress() {
+    return hostField.getText().trim();
   }
 
   private String parsePlayerType(String selection) {
