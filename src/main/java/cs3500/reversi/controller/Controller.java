@@ -68,9 +68,10 @@ public class Controller implements ViewListener {
       return;
     }
     if (playerType instanceof AIPlayer && model.getCurrentTurn() == player) {
+      view.showThinking(true);
       view.scheduleDelayed(() -> {
-        if (!model.gameOver() && model.getCurrentTurn() == player) {
-          try {
+        try {
+          if (!model.gameOver() && model.getCurrentTurn() == player) {
             try {
               playerType.play(model);
             } catch (Exception ex) {
@@ -80,9 +81,10 @@ public class Controller implements ViewListener {
             view.refresh();
             SoundManager.play("move");
             checkGameOver();
-          } finally {
-            notifyOpponent();
           }
+        } finally {
+          view.showThinking(false);
+          notifyOpponent();
         }
       }, 300);
     }

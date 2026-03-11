@@ -127,4 +127,12 @@ public interface IGraphicsView {
   default void setStatusMessage(String message) {
     // no-op by default
   }
+
+  /**
+   * Shows or hides a thinking indicator while the AI computes its move.
+   * @param thinking true to show the indicator, false to hide it.
+   */
+  default void showThinking(boolean thinking) {
+    // no-op by default
+  }
 }

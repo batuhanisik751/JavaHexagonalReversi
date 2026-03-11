@@ -4,7 +4,10 @@ import java.io.File;
 import java.util.List;
 import java.util.Optional;
 
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
 import javafx.animation.PauseTransition;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -40,6 +43,7 @@ public class FxReversiView implements IGraphicsView {
   private final FxTheme theme;
   private final FxHistoryPanel historyPanel;
   private final Stage stage;
+  private Timeline thinkingTimeline;
   private Runnable restartAction;
   private ViewListener viewListener;
 
@@ -248,6 +252,33 @@ public class FxReversiView implements IGraphicsView {
     chooser.getExtensionFilters().add(
             new FileChooser.ExtensionFilter("Reversi Save (.reversi)", "*.reversi"));
     return chooser.showOpenDialog(stage);
+  }
+
+  @Override
+  public void showThinking(boolean thinking) {
+    if (thinking) {
+      turnLabel.setText("Thinking...");
+      turnLabel.setStyle(labelStyle(theme.turnLabelActive()));
+      String[] frames = {"Thinking.", "Thinking..", "Thinking..."};
+      thinkingTimeline = new Timeline(new KeyFrame(Duration.millis(400), e -> {
+        String current = turnLabel.getText();
+        if (frames[0].equals(current)) {
+          turnLabel.setText(frames[1]);
+        } else if (frames[1].equals(current)) {
+          turnLabel.setText(frames[2]);
+        } else {
+          turnLabel.setText(frames[0]);
+        }
+      }));
+      thinkingTimeline.setCycleCount(Animation.INDEFINITE);
+      thinkingTimeline.play();
+    } else {
+      if (thinkingTimeline != null) {
+        thinkingTimeline.stop();
+        thinkingTimeline = null;
+      }
+      updateStatusLabels();
+    }
   }
 
   @Override
