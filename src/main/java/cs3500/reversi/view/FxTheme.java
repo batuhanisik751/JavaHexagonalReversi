@@ -12,6 +12,7 @@ public interface FxTheme {
   Color blackPiece();
   Color whitePiece();
   Color selectedHex();
+  Color focusedHex();
   Color placedHighlight();
   Color flippedHighlight();
   Color scorePanelBg();

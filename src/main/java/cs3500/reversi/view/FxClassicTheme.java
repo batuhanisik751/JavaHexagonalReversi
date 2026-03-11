@@ -12,6 +12,7 @@ public class FxClassicTheme implements FxTheme {
   @Override public Color blackPiece()        { return Color.BLACK; }
   @Override public Color whitePiece()        { return Color.WHITE; }
   @Override public Color selectedHex()       { return Color.rgb(144, 238, 144); }
+  @Override public Color focusedHex()        { return Color.CYAN; }
   @Override public Color placedHighlight()   { return Color.YELLOW; }
   @Override public Color flippedHighlight()  { return Color.rgb(255, 165, 0); }
   @Override public Color scorePanelBg()      { return Color.rgb(0, 80, 0); }

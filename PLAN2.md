@@ -23,7 +23,7 @@ game history, save/load, undo, sound effects, 3 themes, and 150 tests.
 - Show "Opponent disconnected" dialog to the remaining player.
 - Allow the remaining player to save the game or return to setup.
 
-### 3.3 Keyboard Navigation for Hex Selection — NOT STARTED
+### 3.3 Keyboard Navigation for Hex Selection — DONE
 
 - Arrow keys to move a selection cursor between hexes on the board.
 - Visual indicator for the currently focused hex (distinct from mouse hover).

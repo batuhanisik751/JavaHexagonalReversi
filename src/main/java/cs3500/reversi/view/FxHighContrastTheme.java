@@ -12,6 +12,7 @@ public class FxHighContrastTheme implements FxTheme {
   @Override public Color blackPiece()        { return Color.rgb(0, 0, 200); }
   @Override public Color whitePiece()        { return Color.rgb(255, 50, 50); }
   @Override public Color selectedHex()       { return Color.YELLOW; }
+  @Override public Color focusedHex()        { return Color.MAGENTA; }
   @Override public Color placedHighlight()   { return Color.rgb(0, 255, 0); }
   @Override public Color flippedHighlight()  { return Color.rgb(255, 165, 0); }
   @Override public Color scorePanelBg()      { return Color.BLACK; }

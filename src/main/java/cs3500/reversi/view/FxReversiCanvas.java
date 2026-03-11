@@ -109,44 +109,44 @@ class FxReversiCanvas extends Pane {
         gc.setStroke(theme.hexBorder());
         gc.strokePolygon(xs, ys, 6);
 
-        if (!(r == selectedRow && c == selectedCol)) {
-          // Fill hex
-          gc.setFill(theme.hexFill());
-          gc.fillPolygon(xs, ys, 6);
-          gc.setStroke(theme.hexBorder());
-          gc.strokePolygon(xs, ys, 6);
-
-          // Draw pieces
-          if (model.getSpaceContent(r, c) == Player.BLACK) {
-            gc.setFill(theme.blackPiece());
-            gc.fillOval(centerX - HEX_SIZE / 4.0, centerY - HEX_SIZE / 4.0,
-                    HEX_SIZE / 2.0, HEX_SIZE / 2.0);
-          } else if (model.getSpaceContent(r, c) == Player.WHITE) {
-            gc.setFill(theme.whitePiece());
-            gc.fillOval(centerX - HEX_SIZE / 4.0, centerY - HEX_SIZE / 4.0,
-                    HEX_SIZE / 2.0, HEX_SIZE / 2.0);
-          } else {
-            gc.setFill(theme.hexFill());
-            gc.fillPolygon(xs, ys, 6);
-            gc.setStroke(theme.hexBorder());
-            gc.strokePolygon(xs, ys, 6);
-          }
-
-          // Draw highlight ring for last move
-          if (r == highlightPlacedRow && c == highlightPlacedCol) {
-            gc.setStroke(theme.placedHighlight());
-            gc.strokePolygon(xs, ys, 6);
-          } else if (isHighlightedFlip(r, c)) {
-            gc.setStroke(theme.flippedHighlight());
-            gc.strokePolygon(xs, ys, 6);
-          }
+        // Fill hex — use selectedHex color if this is a valid move at the cursor
+        boolean isCursor = (r == selectedRow && c == selectedCol);
+        if (isCursor && model.getSpace(r, c).isEmpty()
+                && model.isValidMove(r, c, model.getCurrentTurn())) {
+          gc.setFill(theme.selectedHex());
         } else {
-          // Selected hex
-          if (model.getSpace(r, c).isEmpty()
-                  && model.isValidMove(r, c, model.getCurrentTurn())) {
-            gc.setFill(theme.selectedHex());
-            gc.fillPolygon(xs, ys, 6);
-          }
+          gc.setFill(theme.hexFill());
+        }
+        gc.fillPolygon(xs, ys, 6);
+        gc.setStroke(theme.hexBorder());
+        gc.strokePolygon(xs, ys, 6);
+
+        // Draw pieces
+        if (model.getSpaceContent(r, c) == Player.BLACK) {
+          gc.setFill(theme.blackPiece());
+          gc.fillOval(centerX - HEX_SIZE / 4.0, centerY - HEX_SIZE / 4.0,
+                  HEX_SIZE / 2.0, HEX_SIZE / 2.0);
+        } else if (model.getSpaceContent(r, c) == Player.WHITE) {
+          gc.setFill(theme.whitePiece());
+          gc.fillOval(centerX - HEX_SIZE / 4.0, centerY - HEX_SIZE / 4.0,
+                  HEX_SIZE / 2.0, HEX_SIZE / 2.0);
+        }
+
+        // Draw highlight ring for last move
+        if (r == highlightPlacedRow && c == highlightPlacedCol) {
+          gc.setStroke(theme.placedHighlight());
+          gc.strokePolygon(xs, ys, 6);
+        } else if (isHighlightedFlip(r, c)) {
+          gc.setStroke(theme.flippedHighlight());
+          gc.strokePolygon(xs, ys, 6);
+        }
+
+        // Draw focused hex cursor border (always visible, even on occupied hexes)
+        if (isCursor) {
+          gc.setLineWidth(3);
+          gc.setStroke(theme.focusedHex());
+          gc.strokePolygon(xs, ys, 6);
+          gc.setLineWidth(1);
         }
       }
     }
@@ -168,10 +168,35 @@ class FxReversiCanvas extends Pane {
   }
 
   private void handleKeyPress(KeyEvent e) {
+    KeyCode code = e.getCode();
+
+    // Navigation keys work even without a listener
+    switch (code) {
+      case UP:
+      case DOWN:
+      case LEFT:
+      case RIGHT:
+        handleArrowKey(code);
+        e.consume();
+        return;
+      case ESCAPE:
+        selectedRow = -1;
+        selectedCol = -1;
+        draw();
+        e.consume();
+        return;
+      default:
+        break;
+    }
+
     if (viewListener == null) {
       return;
     }
-    KeyCode code = e.getCode();
+    // Ctrl+Z for undo
+    if (code == KeyCode.Z && e.isControlDown()) {
+      viewListener.onUndo();
+      return;
+    }
     switch (code) {
       case P:
         viewListener.onPass();
@@ -191,6 +216,66 @@ class FxReversiCanvas extends Pane {
       default:
         break;
     }
+  }
+
+  private void handleArrowKey(KeyCode direction) {
+    Coordinate next = computeNextPosition(model, selectedRow, selectedCol, direction);
+    selectedRow = next.getRow();
+    selectedCol = next.getCol();
+    draw();
+  }
+
+  /**
+   * Computes the next cursor position given the current position and arrow key direction.
+   * Static and package-private for testing without JavaFX initialization.
+   */
+  static Coordinate computeNextPosition(IReadOnlyReversiModel model,
+                                        int curRow, int curCol, KeyCode direction) {
+    int boardRows = model.getBoard().size();
+
+    // If no hex is selected, start at center
+    if (curRow < 0 || curCol < 0) {
+      int midRow = model.getBoardSize() - 1;
+      int midCol = model.getRow(midRow).size() / 2;
+      return new Coordinate(midRow, midCol);
+    }
+
+    int newRow = curRow;
+    int newCol = curCol;
+
+    switch (direction) {
+      case LEFT:
+        newCol = Math.max(0, curCol - 1);
+        break;
+      case RIGHT:
+        newCol = Math.min(model.getRow(curRow).size() - 1, curCol + 1);
+        break;
+      case UP:
+        if (curRow > 0) {
+          newRow = curRow - 1;
+          newCol = closestColInRow(model, curRow, curCol, newRow);
+        }
+        break;
+      case DOWN:
+        if (curRow < boardRows - 1) {
+          newRow = curRow + 1;
+          newCol = closestColInRow(model, curRow, curCol, newRow);
+        }
+        break;
+      default:
+        break;
+    }
+    return new Coordinate(newRow, newCol);
+  }
+
+  static int closestColInRow(IReadOnlyReversiModel model,
+                             int fromRow, int fromCol, int toRow) {
+    double fromOffset = Math.abs((model.getBoardSize() - 1) - fromRow) * (HEX_WIDTH / 2);
+    double toOffset = Math.abs((model.getBoardSize() - 1) - toRow) * (HEX_WIDTH / 2);
+    double fromX = fromCol * HEX_WIDTH + fromOffset;
+    double toCol = (fromX - toOffset) / HEX_WIDTH;
+    int result = (int) Math.round(toCol);
+    return Math.max(0, Math.min(result, model.getRow(toRow).size() - 1));
   }
 
   private boolean isHighlightedFlip(int row, int col) {
