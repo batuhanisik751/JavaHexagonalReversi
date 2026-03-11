@@ -135,4 +135,13 @@ public interface IGraphicsView {
   default void showThinking(boolean thinking) {
     // no-op by default
   }
+
+  /**
+   * Shows a dialog informing the player that the opponent disconnected.
+   * Offers options to save the game or return to setup.
+   * @return "save" if the user chose to save, "return" otherwise.
+   */
+  default String showDisconnectDialog() {
+    return "return";
+  }
 }

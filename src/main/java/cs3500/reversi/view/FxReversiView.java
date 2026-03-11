@@ -282,6 +282,22 @@ public class FxReversiView implements IGraphicsView {
   }
 
   @Override
+  public String showDisconnectDialog() {
+    ButtonType saveButton = new ButtonType("Save Game");
+    ButtonType returnButton = new ButtonType("Return to Setup");
+    Alert alert = new Alert(Alert.AlertType.WARNING,
+            "Your opponent has disconnected.\n\nWould you like to save the game or return to setup?",
+            saveButton, returnButton);
+    alert.setTitle("Opponent Disconnected");
+    alert.setHeaderText(null);
+    Optional<ButtonType> result = alert.showAndWait();
+    if (result.isPresent() && result.get() == saveButton) {
+      return "save";
+    }
+    return "return";
+  }
+
+  @Override
   public void setStatusMessage(String message) {
     if (message != null) {
       turnLabel.setText(message);

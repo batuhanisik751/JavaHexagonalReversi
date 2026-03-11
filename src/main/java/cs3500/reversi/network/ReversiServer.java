@@ -152,6 +152,7 @@ public class ReversiServer {
         line = current.readLine();
       } catch (SocketTimeoutException e) {
         log(current.getColor() + " timed out.");
+        notifyDisconnect(current);
         otherClient(current).send("OPPONENT_DISCONNECTED");
         return;
       }
@@ -159,6 +160,7 @@ public class ReversiServer {
       if (line == null) {
         // Client disconnected
         log(current.getColor() + " disconnected.");
+        notifyDisconnect(current);
         otherClient(current).send("OPPONENT_DISCONNECTED");
         return;
       }
@@ -181,6 +183,7 @@ public class ReversiServer {
           break;
         case "QUIT":
           log(current.getColor() + " quit.");
+          notifyDisconnect(current);
           otherClient(current).send("OPPONENT_DISCONNECTED");
           return;
         default:
@@ -350,6 +353,12 @@ public class ReversiServer {
     return count;
   }
 
+  private void notifyDisconnect(ClientConnection client) {
+    if (listener != null) {
+      listener.onClientDisconnect(client.getColor());
+    }
+  }
+
   private void log(String message) {
     if (listener != null) {
       listener.onServerLog(message);
@@ -371,5 +380,13 @@ public class ReversiServer {
    */
   public interface ServerListener {
     void onServerLog(String message);
+
+    /**
+     * Called when a client disconnects mid-game (EOF, timeout, or quit).
+     * @param disconnectedPlayer the player that disconnected.
+     */
+    default void onClientDisconnect(Player disconnectedPlayer) {
+      // no-op by default
+    }
   }
 }

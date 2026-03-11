@@ -124,15 +124,30 @@ public class ReversiApp extends Application {
       hostView.makeVisible();
 
       // Set up restart to also stop server
-      hostView.setRestartAction(() -> {
+      Runnable cleanup = () -> {
         server.stop();
         hostClient.disconnect();
         primaryStage.close();
         showSetupAndStart(new Stage());
+      };
+      hostView.setRestartAction(cleanup);
+
+      server.setListener(new ReversiServer.ServerListener() {
+        @Override
+        public void onServerLog(String message) {
+          // no-op for now
+        }
+
+        @Override
+        public void onClientDisconnect(Player disconnectedPlayer) {
+          // Server-side logging; client-side dialog handled by NetworkController
+        }
       });
 
       GameHistory history = new GameHistory();
-      new NetworkController(localModel, hostView, hostClient, history);
+      NetworkController netController = new NetworkController(localModel, hostView,
+              hostClient, history);
+      netController.setDisconnectAction(cleanup);
       hostClient.startListening();
 
     } catch (IOException e) {
@@ -151,14 +166,16 @@ public class ReversiApp extends Application {
       FxReversiView view = new FxReversiView(localModel, myColor, theme, primaryStage);
       view.setStatusMessage("Connected as " + myColor.name() + " — waiting for game to start...");
 
-      view.setRestartAction(() -> {
+      Runnable cleanup = () -> {
         client.disconnect();
         primaryStage.close();
         showSetupAndStart(new Stage());
-      });
+      };
+      view.setRestartAction(cleanup);
 
       GameHistory history = new GameHistory();
       NetworkController netController = new NetworkController(localModel, view, client, history);
+      netController.setDisconnectAction(cleanup);
       netController.start();
 
     } catch (IOException e) {

@@ -26,6 +26,7 @@ public class NetworkController implements ViewListener, ClientListener {
   private final ReversiClient client;
   private final GameHistory history;
   private boolean myTurn;
+  private Runnable disconnectAction;
 
   /**
    * Creates a network controller.
@@ -43,6 +44,14 @@ public class NetworkController implements ViewListener, ClientListener {
     this.myTurn = false;
     view.setViewListener(this);
     client.setListener(this);
+  }
+
+  /**
+   * Sets the action to run when the opponent disconnects and the user chooses to return to setup.
+   * @param action the cleanup/restart action.
+   */
+  public void setDisconnectAction(Runnable action) {
+    this.disconnectAction = action;
   }
 
   /** Starts the controller: makes the view visible and begins listening for server messages. */
@@ -162,11 +171,26 @@ public class NetworkController implements ViewListener, ClientListener {
 
   @Override
   public void onOpponentDisconnected() {
-    Platform.runLater(() -> view.showFileError("Opponent disconnected."));
+    Platform.runLater(this::handleDisconnect);
   }
 
   @Override
   public void onConnectionError(String message) {
-    Platform.runLater(() -> view.showFileError("Connection lost: " + message));
+    Platform.runLater(this::handleDisconnect);
+  }
+
+  /**
+   * Handles a disconnect event by showing the disconnect dialog and running the cleanup action.
+   * Public for testability (avoids requiring JavaFX toolkit in unit tests).
+   */
+  public void handleDisconnect() {
+    String choice = view.showDisconnectDialog();
+    while ("save".equals(choice)) {
+      onSave();
+      choice = view.showDisconnectDialog();
+    }
+    if (disconnectAction != null) {
+      disconnectAction.run();
+    }
   }
 }
