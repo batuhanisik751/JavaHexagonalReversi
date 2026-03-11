@@ -481,4 +481,131 @@ public class ReversiModelTests {
     model.passTurn();
     Assert.assertNotEquals(turnBefore, model.getCurrentTurn());
   }
+
+  // ---- Undo Edge Case Tests ----
+
+  // Test undo restores board state after a single move
+  @Test
+  public void testUndoRestoresBoardState() {
+    IReversiModel snapshot = model4.copyModel();
+    String boardBefore = view4.toString();
+    Player turnBefore = model4.getCurrentTurn();
+    model4.move(2, 4, model4.getCurrentTurn());
+    // Board should have changed
+    Assert.assertNotEquals(boardBefore, view4.toString());
+    // Restore from snapshot
+    model4.restoreFrom(snapshot);
+    Assert.assertEquals(boardBefore, view4.toString());
+    Assert.assertEquals(turnBefore, model4.getCurrentTurn());
+  }
+
+  // Test undo after a pass: snapshot taken before pass restores turn correctly
+  @Test
+  public void testUndoAfterPass() {
+    IReversiModel snapshot = model4.copyModel();
+    Player turnBefore = model4.getCurrentTurn();
+    String boardBefore = view4.toString();
+    model4.passTurn();
+    Assert.assertNotEquals(turnBefore, model4.getCurrentTurn());
+    // Restore
+    model4.restoreFrom(snapshot);
+    Assert.assertEquals(turnBefore, model4.getCurrentTurn());
+    Assert.assertEquals(boardBefore, view4.toString());
+  }
+
+  // Test undo after game over: restore model to pre-game-over state
+  @Test
+  public void testUndoAfterGameOver() {
+    IReversiModel model = new ReversiModel(3);
+    // Play moves to near end
+    model.move(1, 3, model.getCurrentTurn()); // BLACK
+    model.move(3, 0, model.getCurrentTurn()); // WHITE
+    model.passTurn(); // BLACK passes
+    model.move(0, 1, model.getCurrentTurn()); // WHITE
+    model.move(1, 0, model.getCurrentTurn()); // BLACK
+    model.passTurn(); // WHITE passes
+    model.move(4, 1, model.getCurrentTurn()); // BLACK
+
+    // Take snapshot before the final move that ends the game
+    IReversiModel snapshot = model.copyModel();
+    Assert.assertFalse(model.gameOver());
+
+    model.move(3, 3, model.getCurrentTurn()); // WHITE — game should now be over
+    Assert.assertTrue(model.gameOver());
+
+    // Undo by restoring snapshot
+    model.restoreFrom(snapshot);
+    Assert.assertFalse(model.gameOver());
+  }
+
+  // Test undo preserves scores correctly
+  @Test
+  public void testUndoRestoresScores() {
+    int blackBefore = model4.getScore(Player.BLACK);
+    int whiteBefore = model4.getScore(Player.WHITE);
+    IReversiModel snapshot = model4.copyModel();
+    model4.move(2, 4, model4.getCurrentTurn());
+    // Scores should have changed
+    Assert.assertNotEquals(blackBefore, model4.getScore(Player.BLACK));
+    // Restore
+    model4.restoreFrom(snapshot);
+    Assert.assertEquals(blackBefore, model4.getScore(Player.BLACK));
+    Assert.assertEquals(whiteBefore, model4.getScore(Player.WHITE));
+  }
+
+  // Test multiple sequential undos (undo, play, undo again)
+  @Test
+  public void testMultipleSequentialUndos() {
+    IReversiModel snapshot1 = model4.copyModel();
+    String board1 = view4.toString();
+    model4.move(2, 4, model4.getCurrentTurn());
+
+    IReversiModel snapshot2 = model4.copyModel();
+    String board2 = view4.toString();
+    model4.move(4, 1, model4.getCurrentTurn());
+
+    // Undo second move
+    model4.restoreFrom(snapshot2);
+    Assert.assertEquals(board2, view4.toString());
+
+    // Undo first move
+    model4.restoreFrom(snapshot1);
+    Assert.assertEquals(board1, view4.toString());
+  }
+
+  // Test that restoreFrom works with a snapshot from a different sized copy
+  @Test
+  public void testRestoreFromPreservesAllSpaces() {
+    IReversiModel snapshot = model4.copyModel();
+    model4.move(2, 4, model4.getCurrentTurn());
+    model4.move(4, 1, model4.getCurrentTurn());
+    model4.restoreFrom(snapshot);
+    // Every space should match the snapshot
+    for (int r = 0; r < model4.getBoard().size(); r++) {
+      for (int c = 0; c < model4.getRow(r).size(); c++) {
+        Assert.assertEquals("Mismatch at (" + r + "," + c + ")",
+                snapshot.getSpaceContent(r, c), model4.getSpaceContent(r, c));
+      }
+    }
+  }
+
+  // Test that loadState correctly sets board from a 2D array
+  @Test
+  public void testLoadStateSetsBoardCorrectly() {
+    IReversiModel model = new ReversiModel(3);
+    int totalRows = (3 * 2) - 1;
+    Player[][] state = new Player[totalRows][];
+    // Build a custom board state
+    state[0] = new Player[]{null, null, null};
+    state[1] = new Player[]{Player.BLACK, Player.BLACK, Player.BLACK, null};
+    state[2] = new Player[]{null, Player.WHITE, Player.BLACK, Player.WHITE, null};
+    state[3] = new Player[]{null, Player.WHITE, Player.WHITE, null};
+    state[4] = new Player[]{null, null, null};
+
+    model.loadState(Player.WHITE, state);
+    Assert.assertEquals(Player.WHITE, model.getCurrentTurn());
+    Assert.assertEquals(Player.BLACK, model.getSpaceContent(1, 0));
+    Assert.assertEquals(Player.WHITE, model.getSpaceContent(2, 1));
+    Assert.assertNull(model.getSpaceContent(0, 0));
+  }
 }
