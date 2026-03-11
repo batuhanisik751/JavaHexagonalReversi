@@ -149,7 +149,12 @@ public class FxSetupDialog {
       stage.close();
     });
 
-    HBox buttonBox = new HBox(startButton);
+    Button statsButton = new Button("Statistics");
+    statsButton.setStyle("-fx-font-family: 'SansSerif'; -fx-font-weight: bold; "
+            + "-fx-font-size: 14px;");
+    statsButton.setOnAction(e -> new FxStatsView().showAndWait());
+
+    HBox buttonBox = new HBox(10, statsButton, startButton);
     buttonBox.setAlignment(Pos.CENTER);
     buttonBox.setPadding(new Insets(16, 0, 4, 0));
     GridPane.setColumnSpan(buttonBox, 2);

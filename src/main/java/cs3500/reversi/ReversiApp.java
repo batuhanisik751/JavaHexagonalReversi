@@ -30,6 +30,7 @@ import cs3500.reversi.view.FxDarkTheme;
 import cs3500.reversi.view.FxHighContrastTheme;
 import cs3500.reversi.view.FxReversiView;
 import cs3500.reversi.view.FxSetupDialog;
+import cs3500.reversi.stats.GameMetadata;
 import cs3500.reversi.view.FxTheme;
 
 /**
@@ -88,8 +89,11 @@ public class ReversiApp extends Application {
     viewPlayer2.setRestartAction(restart);
 
     GameHistory history = new GameHistory();
+    GameMetadata metadata = new GameMetadata(boardSize, p1Type, p2Type);
     Controller controller1 = new Controller(model, player1, viewPlayer1, history);
     Controller controller2 = new Controller(model, player2, viewPlayer2, history);
+    controller1.setGameMetadata(metadata);
+    controller2.setGameMetadata(metadata);
     controller1.setOpponent(controller2);
     controller2.setOpponent(controller1);
     controller1.start();

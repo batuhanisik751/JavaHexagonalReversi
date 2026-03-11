@@ -13,6 +13,9 @@ import cs3500.reversi.persistence.GameLoader;
 import cs3500.reversi.persistence.GameSaver;
 import cs3500.reversi.persistence.LoadResult;
 import cs3500.reversi.audio.SoundManager;
+import cs3500.reversi.stats.GameMetadata;
+import cs3500.reversi.stats.GameResult;
+import cs3500.reversi.stats.StatsManager;
 import cs3500.reversi.view.IGraphicsView;
 
 /**
@@ -27,6 +30,7 @@ public class Controller implements ViewListener {
   private final GameHistory history;
   private IReversiModel lastSnapshot;
   private Controller opponent;
+  private GameMetadata gameMetadata;
 
   /**
    * Makes a Controller for a reversi model and player.
@@ -57,6 +61,14 @@ public class Controller implements ViewListener {
       this.view.setAnimationSpeed(true);
       opponent.view.setAnimationSpeed(true);
     }
+  }
+
+  /**
+   * Sets the game metadata for statistics tracking.
+   * @param metadata the metadata from the setup dialog.
+   */
+  public void setGameMetadata(GameMetadata metadata) {
+    this.gameMetadata = metadata;
   }
 
   /**
@@ -269,11 +281,37 @@ public class Controller implements ViewListener {
   private void checkGameOver() {
     if (model.gameOver()) {
       SoundManager.play("gameOver");
+      // Record stats only from the Black controller to avoid double-recording
+      if (this.player == Player.BLACK && gameMetadata != null) {
+        recordGameResult();
+      }
       // Defer the blocking modal dialog so the current callback can finish
       // and notifyOpponent() can update the other view before we block the UI thread.
       view.runOnUIThread(() ->
               view.gameOver(model.getOpponentScore(Player.WHITE),
                       model.getOpponentScore(Player.BLACK)));
     }
+  }
+
+  private void recordGameResult() {
+    int blackScore = model.getOpponentScore(Player.WHITE);
+    int whiteScore = model.getOpponentScore(Player.BLACK);
+    String winner;
+    if (blackScore > whiteScore) {
+      winner = "black";
+    } else if (whiteScore > blackScore) {
+      winner = "white";
+    } else {
+      winner = "draw";
+    }
+    GameResult result = new GameResult(
+            java.time.LocalDate.now().toString(),
+            gameMetadata.getBoardSize(),
+            gameMetadata.getBlackPlayerType(),
+            gameMetadata.getWhitePlayerType(),
+            winner, blackScore, whiteScore,
+            history.getRecords().size()
+    );
+    StatsManager.appendResult(result);
   }
 }
