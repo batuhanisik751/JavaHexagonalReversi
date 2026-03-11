@@ -25,6 +25,7 @@ import javafx.util.Duration;
 
 import cs3500.reversi.audio.SoundManager;
 import cs3500.reversi.controller.ViewListener;
+import cs3500.reversi.history.GameHistory;
 import cs3500.reversi.history.MoveRecord;
 import cs3500.reversi.model.Coordinate;
 import cs3500.reversi.model.IReadOnlyReversiModel;
@@ -46,6 +47,7 @@ public class FxReversiView implements IGraphicsView {
   private Timeline thinkingTimeline;
   private Runnable restartAction;
   private ViewListener viewListener;
+  private GameHistory history;
 
   /**
    * Constructs a new FxReversiView with the given model, player, and theme.
@@ -137,6 +139,11 @@ public class FxReversiView implements IGraphicsView {
   }
 
   @Override
+  public void setHistory(GameHistory history) {
+    this.history = history;
+  }
+
+  @Override
   public void makeVisible() {
     stage.show();
     reversiCanvas.draw();
@@ -173,14 +180,19 @@ public class FxReversiView implements IGraphicsView {
     String message = winner + "\n\nBlack Score: " + blackScore + "\nWhite Score: " + whiteScore;
 
     ButtonType playAgain = new ButtonType("Play Again");
+    ButtonType replay = new ButtonType("Replay");
     ButtonType quit = new ButtonType("Quit");
-    Alert alert = new Alert(Alert.AlertType.INFORMATION, message, playAgain, quit);
+    Alert alert = new Alert(Alert.AlertType.INFORMATION, message, playAgain, replay, quit);
     alert.setTitle("Game Over");
     alert.setHeaderText(null);
     Optional<ButtonType> result = alert.showAndWait();
 
     if (result.isPresent() && result.get() == playAgain && restartAction != null) {
       restartAction.run();
+    } else if (result.isPresent() && result.get() == replay && history != null) {
+      FxReplayView replayView = new FxReplayView(
+              model.getBoardSize(), history.getRecords(), theme);
+      replayView.show();
     } else {
       Platform.exit();
     }

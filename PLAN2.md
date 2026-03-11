@@ -34,7 +34,7 @@ game history, save/load, undo, sound effects, 3 themes, and 150 tests.
 
 ## Phase 4 — Medium Features
 
-### 4.1 Game Replay Mode — NOT STARTED
+### 4.1 Game Replay Mode — DONE
 
 - Add a "Replay" button to the load game dialog or post-game screen.
 - Reconstruct game state move-by-move from `GameHistory` / `MoveRecord`.

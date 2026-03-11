@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.List;
 
 import cs3500.reversi.controller.ViewListener;
+import cs3500.reversi.history.GameHistory;
 import cs3500.reversi.history.MoveRecord;
 import cs3500.reversi.model.Coordinate;
 
@@ -143,5 +144,13 @@ public interface IGraphicsView {
    */
   default String showDisconnectDialog() {
     return "return";
+  }
+
+  /**
+   * Sets the game history reference for replay support.
+   * @param history the shared game history.
+   */
+  default void setHistory(GameHistory history) {
+    // no-op by default
   }
 }

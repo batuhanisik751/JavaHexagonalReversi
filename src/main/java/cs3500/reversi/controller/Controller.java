@@ -42,6 +42,7 @@ public class Controller implements ViewListener {
     this.playerType = player;
     this.view = view;
     this.history = history;
+    view.setHistory(history);
     view.setViewListener(this);
     view.makeVisible();
   }
@@ -72,12 +73,22 @@ public class Controller implements ViewListener {
       view.scheduleDelayed(() -> {
         try {
           if (!model.gameOver() && model.getCurrentTurn() == player) {
+            Player[][] before = snapshotBoard();
+            boolean passed = false;
             try {
               playerType.play(model);
             } catch (Exception ex) {
               // Strategy failed — fall back to passing so the game continues.
               model.passTurn();
+              passed = true;
             }
+            // Record AI move in history for replay support
+            if (passed) {
+              history.recordPass(player);
+            } else {
+              recordMoveFromDiff(before, player);
+            }
+            view.updateHistory(history.getRecords());
             view.refresh();
             SoundManager.play("move");
             checkGameOver();
@@ -171,8 +182,35 @@ public class Controller implements ViewListener {
   }
 
   /**
-   * Checks if the game is over and shows the game over message if so.
+   * Detects the placed piece and flipped pieces by comparing board state before/after a move,
+   * then records the move in history. Used for AI moves where we don't know the exact move.
    */
+  private void recordMoveFromDiff(Player[][] before, Player turnBefore) {
+    int placedRow = -1;
+    int placedCol = -1;
+    List<Coordinate> flipped = new ArrayList<>();
+    for (int r = 0; r < model.getBoard().size(); r++) {
+      for (int c = 0; c < model.getRow(r).size(); c++) {
+        Player afterPlayer = model.getSpaceContent(r, c);
+        if (afterPlayer != null && before[r][c] == null) {
+          // New piece placed
+          placedRow = r;
+          placedCol = c;
+        } else if (afterPlayer != null && afterPlayer != before[r][c]) {
+          // Flipped piece
+          flipped.add(new Coordinate(r, c));
+        }
+      }
+    }
+    if (placedRow >= 0) {
+      history.recordMove(turnBefore, placedRow, placedCol, flipped);
+      view.highlightLastMove(placedRow, placedCol, flipped);
+    } else {
+      // No piece placed — treat as pass
+      history.recordPass(turnBefore);
+    }
+  }
+
   private Player[][] snapshotBoard() {
     int rows = model.getBoard().size();
     Player[][] snapshot = new Player[rows][];
