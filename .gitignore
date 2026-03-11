@@ -22,6 +22,8 @@ bin/
 .classpath
 .project
 .factorypath
+*.swp
+*~
 
 # OS files
 .DS_Store
@@ -29,3 +31,9 @@ Thumbs.db
 
 # Log files
 *.log
+
+# Save game files
+*.reversi
+
+# Maven wrapper (if generated)
+.mvn/wrapper/maven-wrapper.jar

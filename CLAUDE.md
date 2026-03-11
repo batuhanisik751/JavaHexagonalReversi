@@ -6,8 +6,9 @@ These rules are **mandatory**. Follow them in every interaction on this project.
 
 ## Project Overview
 
-- **Language:** Java 11
+- **Language:** Java 21
 - **Build:** Maven (`mvn compile`, `mvn test`)
+- **UI framework:** JavaFX 21 (primary), Swing (legacy in `view/legacy/`)
 - **Test framework:** JUnit 4.13.2
 - **Package root:** `cs3500.reversi`
 - **Source:** `src/main/java/cs3500/reversi/`
@@ -18,11 +19,17 @@ These rules are **mandatory**. Follow them in every interaction on this project.
 
 ```
 src/main/java/cs3500/reversi/
-├── Reversi.java                  # Entry point
+├── Reversi.java                  # CLI entry point
+├── ReversiApp.java               # JavaFX entry point
 ├── controller/                   # Controllers, player types, listeners
 ├── model/                        # Game state, board, coordinates, interfaces
-├── strategy/                     # AI strategies (pluggable)
-└── view/                         # Swing GUI, text view, hexagon rendering
+├── strategy/                     # AI strategies (pluggable, 6 implementations)
+├── view/                         # JavaFX GUI, text view, themes
+│   └── legacy/                   # Deprecated Swing GUI
+├── network/                      # LAN multiplayer (client-server)
+├── history/                      # Move tracking (GameHistory, MoveRecord)
+├── persistence/                  # Save/load (.reversi format)
+└── audio/                        # Sound effects (SoundManager)
 
 src/test/java/cs3500/reversi/     # All tests and mock strategies
 ```
@@ -67,7 +74,7 @@ When compacting context, **always preserve**:
 
 ### Java Style
 
-- Java 11 — no features from newer versions
+- Java 21
 - Use interfaces for public-facing types (`IReversiModel`, `ISpace`, `ITextView`, etc.)
 - Package-private by default; only `public` when needed across packages
 - No wildcard imports — use explicit imports
@@ -75,9 +82,9 @@ When compacting context, **always preserve**:
 
 ### Dependencies
 
-- The project is dependency-free besides JUnit. Keep it that way.
+- Dependencies: JavaFX 21 + JUnit 4.13.2. Keep it minimal.
 - Do NOT add external libraries without explicit user approval
-- Prefer JDK built-in libraries (`javax.swing`, `javax.sound.sampled`, `java.io`, etc.)
+- Prefer JDK built-in libraries (`javafx`, `javax.sound.sampled`, `java.io`, etc.)
 - Do NOT use Java serialization — use plain-text or JSON formats for persistence
 
 ### Testing
@@ -102,8 +109,8 @@ When compacting context, **always preserve**:
 
 - Do NOT modify working strategy classes. Create new ones instead and keep originals as reference.
 - Do NOT add "Play Again" by mutating existing model state. Create a fresh model instance.
-- Do NOT block the Swing EDT. Use `javax.swing.Timer` or background threads for delays/AI thinking.
-- Do NOT use `Thread.sleep` on the Event Dispatch Thread.
+- Do NOT block the JavaFX Application Thread or Swing EDT. Use `Platform.runLater()`, `javafx.animation.Timeline`, or background threads for delays/AI thinking.
+- Do NOT use `Thread.sleep` on the UI thread.
 - Do NOT use Java serialization for save/load — it breaks when classes are renamed or moved.
 - Do NOT skip testing undo edge cases (undo after pass, undo on opponent's turn, undo after game over).
 - Do NOT do a full rewrite of any existing file. Make incremental, targeted changes.
@@ -124,7 +131,8 @@ When compacting context, **always preserve**:
 |------|---------|
 | Compile | `mvn compile` |
 | Run tests | `mvn test` |
-| Run game | `mvn exec:java -Dexec.mainClass="cs3500.reversi.Reversi"` |
+| Run game (JavaFX) | `mvn javafx:run` |
+| Run game (CLI) | `mvn exec:java -Dexec.mainClass="cs3500.reversi.Reversi"` |
 | Clean build | `mvn clean compile` |
 | Package JAR | `mvn package` |
 

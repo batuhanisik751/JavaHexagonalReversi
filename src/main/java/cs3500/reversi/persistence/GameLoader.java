@@ -79,7 +79,7 @@ public final class GameLoader {
             Player player = Player.valueOf(parts[1]);
             int row = Integer.parseInt(parts[2]);
             int col = Integer.parseInt(parts[3]);
-            int flippedCount = Integer.parseInt(parts[4]);
+            // parts[4] contains flipped count (not used during load — flips are replayed)
             history.add(MoveRecord.move(moveNum, player, row, col, new ArrayList<>()));
           }
           moveNum++;

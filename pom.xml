@@ -9,6 +9,8 @@
     <artifactId>reversi</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+    <name>JavaHexagonalReversi</name>
+    <description>Hexagonal Reversi with JavaFX GUI, AI strategies, LAN multiplayer, and MVC architecture</description>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
