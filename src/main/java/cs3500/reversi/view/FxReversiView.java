@@ -44,6 +44,7 @@ public class FxReversiView implements IGraphicsView {
   private final FxTheme theme;
   private final FxHistoryPanel historyPanel;
   private final Stage stage;
+  private final Label timerLabel;
   private Timeline thinkingTimeline;
   private Runnable restartAction;
   private ViewListener viewListener;
@@ -83,7 +84,11 @@ public class FxReversiView implements IGraphicsView {
     turnLabel = new Label();
     styleLabel(turnLabel, theme.turnLabelActive());
 
-    HBox scorePanel = new HBox(40, blackScoreLabel, whiteScoreLabel, turnLabel);
+    timerLabel = new Label();
+    styleLabel(timerLabel, theme.turnLabelActive());
+    timerLabel.setVisible(false);
+
+    HBox scorePanel = new HBox(40, blackScoreLabel, whiteScoreLabel, turnLabel, timerLabel);
     scorePanel.setAlignment(Pos.CENTER);
     scorePanel.setPadding(new Insets(5));
     scorePanel.setStyle("-fx-background-color: " + toHex(theme.scorePanelBg()) + ";");
@@ -221,6 +226,21 @@ public class FxReversiView implements IGraphicsView {
   @Override
   public void setAnimationSpeed(boolean fast) {
     reversiCanvas.setFastAnimation(fast);
+  }
+
+  @Override
+  public void updateTimerDisplay(int secondsRemaining) {
+    if (secondsRemaining < 0) {
+      timerLabel.setVisible(false);
+    } else {
+      timerLabel.setVisible(true);
+      timerLabel.setText(secondsRemaining + "s");
+      if (secondsRemaining <= 5) {
+        timerLabel.setStyle(labelStyle(javafx.scene.paint.Color.RED));
+      } else {
+        timerLabel.setStyle(labelStyle(theme.turnLabelActive()));
+      }
+    }
   }
 
   @Override

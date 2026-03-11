@@ -55,23 +55,26 @@ public class ReversiApp extends Application {
     String mode = dialog.getGameMode();
     FxTheme theme = resolveTheme(dialog.getThemeName());
 
+    int timerSeconds = dialog.getTimerSeconds();
+
     switch (mode) {
       case "host":
         startHostGame(primaryStage, dialog.getBoardSize(), dialog.getPlayer1Type(),
-                dialog.getPort(), theme);
+                dialog.getPort(), theme, timerSeconds);
         break;
       case "join":
-        startJoinGame(primaryStage, dialog.getHostAddress(), dialog.getPort(), theme);
+        startJoinGame(primaryStage, dialog.getHostAddress(), dialog.getPort(), theme,
+                timerSeconds);
         break;
       default:
         startLocalGame(primaryStage, dialog.getBoardSize(), dialog.getPlayer1Type(),
-                dialog.getPlayer2Type(), theme);
+                dialog.getPlayer2Type(), theme, timerSeconds);
         break;
     }
   }
 
   private void startLocalGame(Stage primaryStage, int boardSize,
-                               String p1Type, String p2Type, FxTheme theme) {
+                               String p1Type, String p2Type, FxTheme theme, int timerSeconds) {
     IReversiModel model = new ReversiModel(boardSize);
     PlayerType player1 = createPlayer(model, Player.BLACK, p1Type);
     PlayerType player2 = createPlayer(model, Player.WHITE, p2Type);
@@ -94,6 +97,8 @@ public class ReversiApp extends Application {
     Controller controller2 = new Controller(model, player2, viewPlayer2, history);
     controller1.setGameMetadata(metadata);
     controller2.setGameMetadata(metadata);
+    controller1.setTimerSeconds(timerSeconds);
+    controller2.setTimerSeconds(timerSeconds);
     controller1.setOpponent(controller2);
     controller2.setOpponent(controller1);
     controller1.start();
@@ -101,7 +106,7 @@ public class ReversiApp extends Application {
   }
 
   private void startHostGame(Stage primaryStage, int boardSize, String p1Type,
-                              int port, FxTheme theme) {
+                              int port, FxTheme theme, int timerSeconds) {
     try {
       // Start the server
       ReversiServer server = new ReversiServer(port, boardSize, 60000);
@@ -152,6 +157,7 @@ public class ReversiApp extends Application {
       NetworkController netController = new NetworkController(localModel, hostView,
               hostClient, history);
       netController.setDisconnectAction(cleanup);
+      netController.setTimerSeconds(timerSeconds);
       hostClient.startListening();
 
     } catch (IOException e) {
@@ -159,7 +165,8 @@ public class ReversiApp extends Application {
     }
   }
 
-  private void startJoinGame(Stage primaryStage, String host, int port, FxTheme theme) {
+  private void startJoinGame(Stage primaryStage, String host, int port, FxTheme theme,
+                              int timerSeconds) {
     try {
       ReversiClient client = new ReversiClient(host, port);
       Player myColor = client.connect();
@@ -180,6 +187,7 @@ public class ReversiApp extends Application {
       GameHistory history = new GameHistory();
       NetworkController netController = new NetworkController(localModel, view, client, history);
       netController.setDisconnectAction(cleanup);
+      netController.setTimerSeconds(timerSeconds);
       netController.start();
 
     } catch (IOException e) {

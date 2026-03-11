@@ -161,4 +161,12 @@ public interface IGraphicsView {
   default void setAnimationSpeed(boolean fast) {
     // no-op by default
   }
+
+  /**
+   * Updates the timer countdown display.
+   * @param secondsRemaining seconds left, or -1 to hide the timer.
+   */
+  default void updateTimerDisplay(int secondsRemaining) {
+    // no-op by default
+  }
 }

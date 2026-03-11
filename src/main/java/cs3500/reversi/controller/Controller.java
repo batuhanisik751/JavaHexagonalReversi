@@ -31,6 +31,7 @@ public class Controller implements ViewListener {
   private IReversiModel lastSnapshot;
   private Controller opponent;
   private GameMetadata gameMetadata;
+  private MoveTimer moveTimer;
 
   /**
    * Makes a Controller for a reversi model and player.
@@ -72,11 +73,45 @@ public class Controller implements ViewListener {
   }
 
   /**
+   * Configures a per-turn move timer. 0 means no limit.
+   * @param seconds the time limit per turn in seconds.
+   */
+  public void setTimerSeconds(int seconds) {
+    this.moveTimer = new MoveTimer(seconds,
+            () -> view.updateTimerDisplay(moveTimer.getSecondsRemaining()),
+            this::onTimerTimeout,
+            () -> SoundManager.play("warning"));
+  }
+
+  private void onTimerTimeout() {
+    if (model.gameOver() || model.getCurrentTurn() != player) {
+      return;
+    }
+    // Auto-pass on timeout
+    model.passTurn();
+    this.lastSnapshot = null;
+    history.recordPass(player);
+    view.updateHistory(history.getRecords());
+    view.highlightLastMove(-1, -1, new ArrayList<>());
+    view.updateTimerDisplay(-1);
+    view.refresh();
+    SoundManager.play("pass");
+    checkGameOver();
+    notifyOpponent();
+    tryAIMove();
+  }
+
+  /**
    * Starts the Controller, showing the initial turn notification.
    * If this controller's player is AI and it's their turn, triggers AI play.
    */
   public void start() {
     view.playerTurn();
+    // Start timer for the first human player's turn
+    if (!(playerType instanceof AIPlayer) && model.getCurrentTurn() == player
+            && moveTimer != null && moveTimer.isActive()) {
+      moveTimer.reset();
+    }
     tryAIMove();
   }
 
@@ -123,6 +158,11 @@ public class Controller implements ViewListener {
   private void notifyOpponent() {
     if (opponent != null) {
       opponent.view.refresh();
+      // Start opponent's timer if they are human
+      if (!(opponent.playerType instanceof AIPlayer) && opponent.moveTimer != null
+              && opponent.moveTimer.isActive() && !model.gameOver()) {
+        opponent.moveTimer.reset();
+      }
       opponent.tryAIMove();
     }
   }
@@ -158,6 +198,10 @@ public class Controller implements ViewListener {
     history.recordMove(player, row, col, flipped);
     view.updateHistory(history.getRecords());
     view.highlightLastMove(row, col, flipped);
+    if (moveTimer != null) {
+      moveTimer.stop();
+      view.updateTimerDisplay(-1);
+    }
     view.refresh();
     SoundManager.play("move");
     checkGameOver();
@@ -175,6 +219,10 @@ public class Controller implements ViewListener {
     history.recordPass(player);
     view.updateHistory(history.getRecords());
     view.highlightLastMove(-1, -1, new ArrayList<>());
+    if (moveTimer != null) {
+      moveTimer.stop();
+      view.updateTimerDisplay(-1);
+    }
     view.refresh();
     SoundManager.play("pass");
     checkGameOver();
@@ -193,6 +241,15 @@ public class Controller implements ViewListener {
     history.undoLast();
     view.updateHistory(history.getRecords());
     view.highlightLastMove(-1, -1, new ArrayList<>());
+    if (moveTimer != null) {
+      moveTimer.stop();
+      // Restart timer for the restored turn if it's this player's turn
+      if (model.getCurrentTurn() == player && moveTimer.isActive()) {
+        moveTimer.reset();
+      } else {
+        view.updateTimerDisplay(-1);
+      }
+    }
     view.refresh();
     SoundManager.play("undo");
   }
@@ -270,6 +327,10 @@ public class Controller implements ViewListener {
         history.loadRecords(result.getHistory());
         view.updateHistory(history.getRecords());
         view.highlightLastMove(-1, -1, new ArrayList<>());
+        if (moveTimer != null) {
+          moveTimer.stop();
+          view.updateTimerDisplay(-1);
+        }
         view.refresh();
         view.showLoadSuccess();
       } catch (IOException e) {
@@ -280,6 +341,10 @@ public class Controller implements ViewListener {
 
   private void checkGameOver() {
     if (model.gameOver()) {
+      if (moveTimer != null) {
+        moveTimer.stop();
+        view.updateTimerDisplay(-1);
+      }
       SoundManager.play("gameOver");
       // Record stats only from the Black controller to avoid double-recording
       if (this.player == Player.BLACK && gameMetadata != null) {

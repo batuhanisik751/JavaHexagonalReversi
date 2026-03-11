@@ -32,6 +32,7 @@ public class FxSetupDialog {
   private static final String[] PLAYER_OPTIONS =
           {"Human", "AI - Easy", "AI - Medium", "AI - Hard"};
   private static final String[] THEME_OPTIONS = {"Dark", "Classic Green", "High Contrast"};
+  private static final String[] TIMER_OPTIONS = {"No Limit", "10s", "30s", "60s"};
   private static final String[] GAME_MODE_OPTIONS = {"Local Game", "Host Game (LAN)", "Join Game (LAN)"};
 
   private final Stage stage;
@@ -44,6 +45,7 @@ public class FxSetupDialog {
   private final TextField hostField;
   private final Label player2Label;
   private final Label boardSizeLabel;
+  private final ComboBox<String> timerCombo;
   private final Label portLabel;
   private final Label hostLabel;
   private boolean confirmed;
@@ -139,6 +141,14 @@ public class FxSetupDialog {
     themeCombo.setPrefWidth(180);
     themeCombo.getSelectionModel().selectFirst();
     content.add(themeCombo, 1, row++);
+
+    // Move Timer
+    content.add(styledLabel("Move Timer:"), 0, row);
+    timerCombo = new ComboBox<>(FXCollections.observableArrayList(TIMER_OPTIONS));
+    timerCombo.setStyle(FIELD_STYLE);
+    timerCombo.setPrefWidth(180);
+    timerCombo.getSelectionModel().selectFirst();
+    content.add(timerCombo, 1, row++);
 
     // Start button
     Button startButton = new Button("Start Game");
@@ -290,6 +300,21 @@ public class FxSetupDialog {
    */
   public String getHostAddress() {
     return hostField.getText().trim();
+  }
+
+  /**
+   * Returns the move timer setting in seconds, or 0 for no limit.
+   */
+  public int getTimerSeconds() {
+    String selection = timerCombo.getValue();
+    if ("No Limit".equals(selection)) {
+      return 0;
+    }
+    try {
+      return Integer.parseInt(selection.replace("s", ""));
+    } catch (NumberFormatException e) {
+      return 0;
+    }
   }
 
   private String parsePlayerType(String selection) {

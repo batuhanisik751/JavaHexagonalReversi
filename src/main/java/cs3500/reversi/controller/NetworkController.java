@@ -11,6 +11,7 @@ import cs3500.reversi.model.IReversiModel;
 import cs3500.reversi.model.Player;
 import cs3500.reversi.network.ClientListener;
 import cs3500.reversi.network.ReversiClient;
+import cs3500.reversi.audio.SoundManager;
 import cs3500.reversi.persistence.GameSaver;
 import cs3500.reversi.view.IGraphicsView;
 
@@ -27,6 +28,7 @@ public class NetworkController implements ViewListener, ClientListener {
   private final GameHistory history;
   private boolean myTurn;
   private Runnable disconnectAction;
+  private MoveTimer moveTimer;
 
   /**
    * Creates a network controller.
@@ -52,6 +54,23 @@ public class NetworkController implements ViewListener, ClientListener {
    */
   public void setDisconnectAction(Runnable action) {
     this.disconnectAction = action;
+  }
+
+  /**
+   * Configures a per-turn move timer. 0 means no limit.
+   * On timeout, sends a pass to the server.
+   * @param seconds the time limit per turn in seconds.
+   */
+  public void setTimerSeconds(int seconds) {
+    this.moveTimer = new MoveTimer(seconds,
+            () -> view.updateTimerDisplay(moveTimer.getSecondsRemaining()),
+            () -> {
+              // Auto-pass via server on timeout
+              if (myTurn) {
+                client.sendPass();
+              }
+            },
+            () -> SoundManager.play("warning"));
   }
 
   /** Starts the controller: makes the view visible and begins listening for server messages. */
@@ -118,6 +137,9 @@ public class NetworkController implements ViewListener, ClientListener {
     Platform.runLater(() -> {
       myTurn = true;
       view.playerTurn();
+      if (moveTimer != null && moveTimer.isActive()) {
+        moveTimer.reset();
+      }
     });
   }
 
@@ -125,6 +147,10 @@ public class NetworkController implements ViewListener, ClientListener {
   public void onWait() {
     Platform.runLater(() -> {
       myTurn = false;
+      if (moveTimer != null) {
+        moveTimer.stop();
+        view.updateTimerDisplay(-1);
+      }
       view.refresh();
     });
   }
@@ -166,7 +192,13 @@ public class NetworkController implements ViewListener, ClientListener {
 
   @Override
   public void onGameOver(int blackScore, int whiteScore) {
-    Platform.runLater(() -> view.gameOver(blackScore, whiteScore));
+    Platform.runLater(() -> {
+      if (moveTimer != null) {
+        moveTimer.stop();
+        view.updateTimerDisplay(-1);
+      }
+      view.gameOver(blackScore, whiteScore);
+    });
   }
 
   @Override

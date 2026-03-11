@@ -59,6 +59,9 @@ public final class SoundManager {
         playTone(440, 60, 0.25);
         playTone(520, 60, 0.25);
         break;
+      case "warning":
+        playTone(800, 200, 0.35);
+        break;
       case "gameOver":
         playTone(523, 120, 0.4);
         playTone(659, 120, 0.4);
