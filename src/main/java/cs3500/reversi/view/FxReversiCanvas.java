@@ -21,10 +21,11 @@ import cs3500.reversi.model.IReadOnlyReversiModel;
 import cs3500.reversi.model.Player;
 
 /**
- * JavaFX Canvas-based panel for rendering the Reversi hexagonal game board.
- * Handles mouse clicks for hex selection and keyboard input for moves/passes.
+ * JavaFX Canvas-based panel for rendering the Reversi game board.
+ * Delegates shape-specific rendering to an IShapeRenderer.
  */
 class FxReversiCanvas extends Pane {
+  // Keep these constants for backward compatibility with FxReversiView window sizing
   static final int HEX_SIZE = 40;
   static final double HEX_WIDTH = Math.sqrt(3) * HEX_SIZE;
   static final double HEX_HEIGHT = 1.5 * HEX_SIZE;
@@ -32,6 +33,7 @@ class FxReversiCanvas extends Pane {
   private final IReadOnlyReversiModel model;
   private final FxTheme theme;
   private final Canvas canvas;
+  private final IShapeRenderer renderer;
   private ViewListener viewListener;
   private int selectedRow = -1;
   private int selectedCol = -1;
@@ -56,6 +58,7 @@ class FxReversiCanvas extends Pane {
     this.model = model;
     this.theme = theme;
     this.canvas = new Canvas();
+    this.renderer = createRenderer(model);
     getChildren().add(canvas);
 
     canvas.setOnMouseClicked(this::handleMouseClick);
@@ -69,6 +72,18 @@ class FxReversiCanvas extends Pane {
     canvas.heightProperty().bind(this.heightProperty());
     this.widthProperty().addListener((obs, oldVal, newVal) -> draw());
     this.heightProperty().addListener((obs, oldVal, newVal) -> draw());
+  }
+
+  private static IShapeRenderer createRenderer(IReadOnlyReversiModel model) {
+    String shapeName = model.getBoardShape().getShapeName();
+    switch (shapeName) {
+      case "square":
+        return new SquareRenderer();
+      case "triangular":
+        return new TriangularRenderer();
+      default:
+        return new HexRenderer();
+    }
   }
 
   /**
@@ -170,80 +185,57 @@ class FxReversiCanvas extends Pane {
     gc.setFill(theme.boardBackground());
     gc.fillRect(0, 0, w, h);
 
+    boolean isTriangular = renderer instanceof TriangularRenderer;
+    TriangularRenderer triRenderer = isTriangular ? (TriangularRenderer) renderer : null;
+
     for (int r = 0; r < model.getBoard().size(); r++) {
       for (int c = 0; c < model.getRow(r).size(); c++) {
-        double rowOffset = Math.abs((model.getBoardSize() - 1) - r) * (HEX_WIDTH / 2);
-        double centerX = c * HEX_WIDTH + rowOffset + HEX_WIDTH;
-        double centerY = r * HEX_HEIGHT + HEX_HEIGHT;
+        double[] center = renderer.cellCenter(model, r, c);
+        double centerX = center[0];
+        double centerY = center[1];
 
-        double[] xs = FxHexagon.xPoints(centerX, HEX_SIZE);
-        double[] ys = FxHexagon.yPoints(centerY, HEX_SIZE);
-
-        // Draw hex border
-        gc.setStroke(theme.hexBorder());
-        gc.strokePolygon(xs, ys, 6);
-
-        // Fill hex — use selectedHex color if this is a valid move at the cursor
         boolean isCursor = (r == selectedRow && c == selectedCol);
-        if (isCursor && model.getSpace(r, c).isEmpty()
-                && model.isValidMove(r, c, model.getCurrentTurn())) {
-          gc.setFill(theme.selectedHex());
+        boolean isSelected = isCursor && model.getSpace(r, c).isEmpty()
+                && model.isValidMove(r, c, model.getCurrentTurn());
+        boolean isPlaced = (r == highlightPlacedRow && c == highlightPlacedCol);
+        boolean isFlipped = isHighlightedFlip(r, c);
+
+        // Draw cell shape
+        if (isTriangular) {
+          triRenderer.drawTriangleCell(gc, model, r, c, theme,
+                  isSelected, isCursor, isPlaced, isFlipped);
         } else {
-          gc.setFill(theme.hexFill());
+          renderer.drawCell(gc, centerX, centerY, theme,
+                  isSelected, isCursor, isPlaced, isFlipped);
         }
-        gc.fillPolygon(xs, ys, 6);
-        gc.setStroke(theme.hexBorder());
-        gc.strokePolygon(xs, ys, 6);
 
         // Draw pieces
         Player content = model.getSpaceContent(r, c);
         if (content != null) {
+          double pieceR = renderer.pieceRadius();
           boolean isAnim = isAnimatingCell(r, c) && animProgress < 1.0;
           if (isAnim) {
             double scaleX = FlipAnimationUtils.computeFlipScaleX(animProgress);
             Color pieceColor = (animProgress < 0.5) ? animFromColor : animToColor;
-            double pieceW = (HEX_SIZE / 2.0) * scaleX;
-            double pieceH = HEX_SIZE / 2.0;
+            double pieceW = (pieceR * 2) * scaleX;
+            double pieceH = pieceR * 2;
             gc.setFill(pieceColor);
             gc.fillOval(centerX - pieceW / 2.0, centerY - pieceH / 2.0, pieceW, pieceH);
           } else {
             gc.setFill(content == Player.BLACK ? theme.blackPiece() : theme.whitePiece());
-            gc.fillOval(centerX - HEX_SIZE / 4.0, centerY - HEX_SIZE / 4.0,
-                    HEX_SIZE / 2.0, HEX_SIZE / 2.0);
+            gc.fillOval(centerX - pieceR, centerY - pieceR, pieceR * 2, pieceR * 2);
           }
-        }
-
-        // Draw highlight ring for last move
-        if (r == highlightPlacedRow && c == highlightPlacedCol) {
-          gc.setStroke(theme.placedHighlight());
-          gc.strokePolygon(xs, ys, 6);
-        } else if (isHighlightedFlip(r, c)) {
-          gc.setStroke(theme.flippedHighlight());
-          gc.strokePolygon(xs, ys, 6);
-        }
-
-        // Draw focused hex cursor border (always visible, even on occupied hexes)
-        if (isCursor) {
-          gc.setLineWidth(3);
-          gc.setStroke(theme.focusedHex());
-          gc.strokePolygon(xs, ys, 6);
-          gc.setLineWidth(1);
         }
       }
     }
   }
 
   private void handleMouseClick(MouseEvent e) {
-    double x = e.getX();
-    double y = e.getY();
-
-    int r = (int) ((y + HEX_HEIGHT / 2) / HEX_HEIGHT) - 1;
-    double rowOff = Math.abs((model.getBoardSize() - 1) - r);
-    int c = (int) (((x + HEX_WIDTH / 2) / HEX_WIDTH) - 1 - (rowOff / 2));
-
-    selectedRow = r;
-    selectedCol = c;
-
+    Coordinate coord = renderer.pixelToCoord(model, e.getX(), e.getY());
+    if (coord != null) {
+      selectedRow = coord.getRow();
+      selectedCol = coord.getCol();
+    }
     draw();
     this.requestFocus();
   }
@@ -300,7 +292,7 @@ class FxReversiCanvas extends Pane {
   }
 
   private void handleArrowKey(KeyCode direction) {
-    Coordinate next = computeNextPosition(model, selectedRow, selectedCol, direction);
+    Coordinate next = renderer.computeNextPosition(model, selectedRow, selectedCol, direction);
     selectedRow = next.getRow();
     selectedCol = next.getCol();
     draw();
@@ -312,49 +304,18 @@ class FxReversiCanvas extends Pane {
    */
   static Coordinate computeNextPosition(IReadOnlyReversiModel model,
                                         int curRow, int curCol, KeyCode direction) {
-    int boardRows = model.getBoard().size();
-
-    // If no hex is selected, start at center
-    if (curRow < 0 || curCol < 0) {
-      int midRow = model.getBoardSize() - 1;
-      int midCol = model.getRow(midRow).size() / 2;
-      return new Coordinate(midRow, midCol);
-    }
-
-    int newRow = curRow;
-    int newCol = curCol;
-
-    switch (direction) {
-      case LEFT:
-        newCol = Math.max(0, curCol - 1);
-        break;
-      case RIGHT:
-        newCol = Math.min(model.getRow(curRow).size() - 1, curCol + 1);
-        break;
-      case UP:
-        if (curRow > 0) {
-          newRow = curRow - 1;
-          newCol = closestColInRow(model, curRow, curCol, newRow);
-        }
-        break;
-      case DOWN:
-        if (curRow < boardRows - 1) {
-          newRow = curRow + 1;
-          newCol = closestColInRow(model, curRow, curCol, newRow);
-        }
-        break;
-      default:
-        break;
-    }
-    return new Coordinate(newRow, newCol);
+    IShapeRenderer r = createRenderer(model);
+    return r.computeNextPosition(model, curRow, curCol, direction);
   }
 
   static int closestColInRow(IReadOnlyReversiModel model,
                              int fromRow, int fromCol, int toRow) {
-    double fromOffset = Math.abs((model.getBoardSize() - 1) - fromRow) * (HEX_WIDTH / 2);
-    double toOffset = Math.abs((model.getBoardSize() - 1) - toRow) * (HEX_WIDTH / 2);
-    double fromX = fromCol * HEX_WIDTH + fromOffset;
-    double toCol = (fromX - toOffset) / HEX_WIDTH;
+    // Kept for backward compatibility; delegates to HexRenderer logic
+    double hexWidth = Math.sqrt(3) * 40;
+    double fromOffset = Math.abs((model.getBoardSize() - 1) - fromRow) * (hexWidth / 2);
+    double toOffset = Math.abs((model.getBoardSize() - 1) - toRow) * (hexWidth / 2);
+    double fromX = fromCol * hexWidth + fromOffset;
+    double toCol = (fromX - toOffset) / hexWidth;
     int result = (int) Math.round(toCol);
     return Math.max(0, Math.min(result, model.getRow(toRow).size() - 1));
   }

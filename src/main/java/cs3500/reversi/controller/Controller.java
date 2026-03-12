@@ -321,6 +321,11 @@ public class Controller implements ViewListener {
                   + ") doesn't match current game (" + model.getBoardSize() + ").");
           return;
         }
+        if (!result.getShapeName().equals(model.getBoardShape().getShapeName())) {
+          view.showFileError("Save file board shape (" + result.getShapeName()
+                  + ") doesn't match current game (" + model.getBoardShape().getShapeName() + ").");
+          return;
+        }
         model.loadState(result.getCurrentTurn(), result.getBoardState());
         this.lastSnapshot = null;
         history.clear();

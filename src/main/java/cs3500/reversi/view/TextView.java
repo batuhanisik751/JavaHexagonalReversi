@@ -27,6 +27,18 @@ public class TextView implements ITextView {
    */
   @Override
   public String toString() {
+    String shapeName = model.getBoardShape().getShapeName();
+    switch (shapeName) {
+      case "square":
+        return toStringSquare();
+      case "triangular":
+        return toStringTriangular();
+      default:
+        return toStringHex();
+    }
+  }
+
+  private String toStringHex() {
     int boardSize = model.getBoardSize();
     StringBuilder stringBoard = new StringBuilder();
 
@@ -42,6 +54,33 @@ public class TextView implements ITextView {
       stringBoard.append(" ".repeat(numRep)).append("\n");
     }
     return stringBoard.toString();
+  }
+
+  private String toStringSquare() {
+    StringBuilder sb = new StringBuilder();
+    for (int row = 0; row < model.getBoard().size(); row++) {
+      for (int col = 0; col < model.getRow(row).size(); col++) {
+        sb.append(model.getRow(row).get(col).toString());
+      }
+      sb.append("\n");
+    }
+    return sb.toString();
+  }
+
+  private String toStringTriangular() {
+    StringBuilder sb = new StringBuilder();
+    int totalRows = model.getBoard().size();
+    int maxWidth = 2 * totalRows - 1;
+    for (int row = 0; row < totalRows; row++) {
+      int cellsInRow = model.getRow(row).size();
+      int indent = maxWidth - cellsInRow;
+      sb.append(" ".repeat(indent));
+      for (int col = 0; col < cellsInRow; col++) {
+        sb.append(model.getRow(row).get(col).toString());
+      }
+      sb.append("\n");
+    }
+    return sb.toString();
   }
 
 

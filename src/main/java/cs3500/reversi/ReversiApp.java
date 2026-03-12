@@ -14,9 +14,13 @@ import cs3500.reversi.controller.HumanPlayer;
 import cs3500.reversi.controller.NetworkController;
 import cs3500.reversi.controller.PlayerType;
 import cs3500.reversi.history.GameHistory;
+import cs3500.reversi.model.HexBoardShape;
+import cs3500.reversi.model.IBoardShape;
 import cs3500.reversi.model.IReversiModel;
 import cs3500.reversi.model.Player;
 import cs3500.reversi.model.ReversiModel;
+import cs3500.reversi.model.SquareBoardShape;
+import cs3500.reversi.model.TriangularBoardShape;
 import cs3500.reversi.network.ReversiClient;
 import cs3500.reversi.network.ReversiServer;
 import cs3500.reversi.strategy.AlphaBetaMiniMax;
@@ -25,6 +29,8 @@ import cs3500.reversi.strategy.AvoidNextToCorners;
 import cs3500.reversi.strategy.CornersFirst;
 import cs3500.reversi.strategy.IReversiStrategies;
 import cs3500.reversi.strategy.MiniMax;
+import cs3500.reversi.strategy.ShapeAwareAvoidNextToCorners;
+import cs3500.reversi.strategy.ShapeAwareCornersFirst;
 import cs3500.reversi.view.FxClassicTheme;
 import cs3500.reversi.view.FxDarkTheme;
 import cs3500.reversi.view.FxHighContrastTheme;
@@ -54,13 +60,13 @@ public class ReversiApp extends Application {
 
     String mode = dialog.getGameMode();
     FxTheme theme = resolveTheme(dialog.getThemeName());
-
+    String shapeName = dialog.getShapeName();
     int timerSeconds = dialog.getTimerSeconds();
 
     switch (mode) {
       case "host":
         startHostGame(primaryStage, dialog.getBoardSize(), dialog.getPlayer1Type(),
-                dialog.getPort(), theme, timerSeconds);
+                dialog.getPort(), theme, timerSeconds, shapeName);
         break;
       case "join":
         startJoinGame(primaryStage, dialog.getHostAddress(), dialog.getPort(), theme,
@@ -68,16 +74,18 @@ public class ReversiApp extends Application {
         break;
       default:
         startLocalGame(primaryStage, dialog.getBoardSize(), dialog.getPlayer1Type(),
-                dialog.getPlayer2Type(), theme, timerSeconds);
+                dialog.getPlayer2Type(), theme, timerSeconds, shapeName);
         break;
     }
   }
 
   private void startLocalGame(Stage primaryStage, int boardSize,
-                               String p1Type, String p2Type, FxTheme theme, int timerSeconds) {
-    IReversiModel model = new ReversiModel(boardSize);
-    PlayerType player1 = createPlayer(model, Player.BLACK, p1Type);
-    PlayerType player2 = createPlayer(model, Player.WHITE, p2Type);
+                               String p1Type, String p2Type, FxTheme theme,
+                               int timerSeconds, String shapeName) {
+    IBoardShape shape = resolveShape(shapeName);
+    IReversiModel model = new ReversiModel(boardSize, shape);
+    PlayerType player1 = createPlayer(model, Player.BLACK, p1Type, shapeName);
+    PlayerType player2 = createPlayer(model, Player.WHITE, p2Type, shapeName);
 
     FxReversiView viewPlayer1 = new FxReversiView(model, Player.BLACK, theme, primaryStage);
     Stage stage2 = new Stage();
@@ -106,8 +114,9 @@ public class ReversiApp extends Application {
   }
 
   private void startHostGame(Stage primaryStage, int boardSize, String p1Type,
-                              int port, FxTheme theme, int timerSeconds) {
+                              int port, FxTheme theme, int timerSeconds, String shapeName) {
     try {
+      IBoardShape shape = resolveShape(shapeName);
       // Start the server
       ReversiServer server = new ReversiServer(port, boardSize, 60000);
       server.start();
@@ -126,7 +135,7 @@ public class ReversiApp extends Application {
       Player hostColor = hostClient.connect();
 
       // Create local model for rendering
-      IReversiModel localModel = new ReversiModel(boardSize);
+      IReversiModel localModel = new ReversiModel(boardSize, shape);
       FxReversiView hostView = new FxReversiView(localModel, hostColor, theme, primaryStage);
       hostView.setStatusMessage("Hosting on " + localAddress + ":" + actualPort
               + " — waiting for opponent...");
@@ -203,11 +212,23 @@ public class ReversiApp extends Application {
     alert.showAndWait();
   }
 
-  private PlayerType createPlayer(IReversiModel model, Player color, String type) {
+  private PlayerType createPlayer(IReversiModel model, Player color, String type,
+                                  String shapeName) {
     if (type.equals("human")) {
       return new HumanPlayer(model, color);
     } else {
-      return new AIPlayer(color, findStrategy(type));
+      return new AIPlayer(color, findStrategy(type, shapeName));
+    }
+  }
+
+  private IBoardShape resolveShape(String name) {
+    switch (name) {
+      case "square":
+        return new SquareBoardShape();
+      case "triangular":
+        return new TriangularBoardShape();
+      default:
+        return new HexBoardShape();
     }
   }
 
@@ -222,18 +243,19 @@ public class ReversiApp extends Application {
     }
   }
 
-  private IReversiStrategies findStrategy(String strategy) {
+  private IReversiStrategies findStrategy(String strategy, String shapeName) {
+    boolean isHex = "hexagonal".equals(shapeName);
     switch (strategy) {
       case "easy":
       case "strategy1":
         return new AsManyPiecesAsPossible();
       case "medium":
       case "strategy3":
-        return new CornersFirst();
+        return isHex ? new CornersFirst() : new ShapeAwareCornersFirst();
       case "hard":
         return new AlphaBetaMiniMax(3);
       case "strategy2":
-        return new AvoidNextToCorners();
+        return isHex ? new AvoidNextToCorners() : new ShapeAwareAvoidNextToCorners();
       case "strategy4":
         return new MiniMax();
       default:

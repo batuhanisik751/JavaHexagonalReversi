@@ -29,18 +29,35 @@ public final class GameLoader {
       }
       int boardSize = Integer.parseInt(boardSizeLine.substring("BOARD_SIZE:".length()));
 
-      String turnLine = reader.readLine();
-      if (turnLine == null || !turnLine.startsWith("CURRENT_TURN:")) {
+      // Read optional BOARD_SHAPE line (backward compatible: defaults to hexagonal)
+      String nextLine = reader.readLine();
+      String shapeName = "hexagonal";
+      if (nextLine != null && nextLine.startsWith("BOARD_SHAPE:")) {
+        shapeName = nextLine.substring("BOARD_SHAPE:".length());
+        nextLine = reader.readLine(); // advance to CURRENT_TURN
+      }
+
+      if (nextLine == null || !nextLine.startsWith("CURRENT_TURN:")) {
         throw new IOException("Invalid save file: missing CURRENT_TURN.");
       }
-      Player currentTurn = Player.valueOf(turnLine.substring("CURRENT_TURN:".length()));
+      Player currentTurn = Player.valueOf(nextLine.substring("CURRENT_TURN:".length()));
 
       String boardHeader = reader.readLine();
       if (boardHeader == null || !boardHeader.equals("BOARD:")) {
         throw new IOException("Invalid save file: missing BOARD header.");
       }
 
-      int totalRows = (boardSize * 2) - 1;
+      // Compute total rows based on shape
+      int totalRows;
+      switch (shapeName) {
+        case "square":
+        case "triangular":
+          totalRows = boardSize;
+          break;
+        default:
+          totalRows = (boardSize * 2) - 1;
+          break;
+      }
       Player[][] boardState = new Player[totalRows][];
       for (int r = 0; r < totalRows; r++) {
         String rowLine = reader.readLine();
@@ -86,7 +103,7 @@ public final class GameLoader {
         }
       }
 
-      return new LoadResult(boardSize, currentTurn, boardState, history);
+      return new LoadResult(boardSize, shapeName, currentTurn, boardState, history);
     }
   }
 }

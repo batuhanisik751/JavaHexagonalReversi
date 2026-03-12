@@ -64,8 +64,9 @@ public class FxReversiView implements IGraphicsView {
     this.stage = stage;
 
     stage.setTitle("Reversi - " + (player == Player.BLACK ? "Black (X)" : "White (O)"));
-    int windowSizeX = (int) ((model.getBoardSize() * 2) * FxReversiCanvas.HEX_WIDTH);
-    int windowSizeY = (int) ((model.getBoardSize() * 2) * FxReversiCanvas.HEX_HEIGHT);
+    int[] windowSize = computeWindowSize(model);
+    int windowSizeX = windowSize[0];
+    int windowSizeY = windowSize[1];
 
     BorderPane root = new BorderPane();
     root.setStyle("-fx-background-color: " + toHex(theme.boardBackground()) + ";");
@@ -388,6 +389,23 @@ public class FxReversiView implements IGraphicsView {
   private String labelStyle(javafx.scene.paint.Color color) {
     return "-fx-text-fill: " + toHex(color) + "; "
             + "-fx-font-family: 'SansSerif'; -fx-font-weight: bold; -fx-font-size: 16px;";
+  }
+
+  private static int[] computeWindowSize(IReadOnlyReversiModel model) {
+    String shapeName = model.getBoardShape().getShapeName();
+    switch (shapeName) {
+      case "square":
+        int sq = (int) (model.getBoardSize() * SquareRenderer.CELL_SIZE + 2 * SquareRenderer.PADDING);
+        return new int[]{sq + 200, sq + 100};
+      case "triangular":
+        int tw = (int) (model.getBoardSize() * TriangularRenderer.TRI_SIDE + 2 * TriangularRenderer.PADDING);
+        int th = (int) (model.getBoardSize() * TriangularRenderer.TRI_HEIGHT + 2 * TriangularRenderer.PADDING);
+        return new int[]{tw + 200, th + 100};
+      default:
+        int hx = (int) ((model.getBoardSize() * 2) * FxReversiCanvas.HEX_WIDTH);
+        int hy = (int) ((model.getBoardSize() * 2) * FxReversiCanvas.HEX_HEIGHT);
+        return new int[]{hx, hy};
+    }
   }
 
   private static String toHex(javafx.scene.paint.Color c) {

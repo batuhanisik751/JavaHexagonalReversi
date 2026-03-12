@@ -28,6 +28,8 @@ public final class GameSaver {
     try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
       writer.write("BOARD_SIZE:" + model.getBoardSize());
       writer.newLine();
+      writer.write("BOARD_SHAPE:" + model.getBoardShape().getShapeName());
+      writer.newLine();
       writer.write("CURRENT_TURN:" + model.getCurrentTurn().name());
       writer.newLine();
       writer.write("BOARD:");

@@ -81,4 +81,10 @@ public interface IReadOnlyReversiModel {
    * @return number of Spaces claimed by the given player's opponent.
    */
   int getOpponentScore(Player player);
+
+  /**
+   * Gets the board shape used by this model.
+   * @return the board shape.
+   */
+  IBoardShape getBoardShape();
 }

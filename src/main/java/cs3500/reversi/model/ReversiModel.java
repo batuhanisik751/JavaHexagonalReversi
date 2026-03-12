@@ -9,32 +9,41 @@ import java.util.List;
  */
 public class ReversiModel implements IReversiModel {
   private final int boardSize;
+  private final IBoardShape boardShape;
   private Player currentTurn;
   private List<List<ISpace>> board;
 
   /**
-   * Creates a Reversi Model game, initializes the board based on the given board size, sets
-   * the starting turn to Player.BLACK.
+   * Creates a Reversi Model game with hexagonal board (backward compatible).
    *
    * @param boardSize the size of the board, based on the size of the edges of the hexagon.
-   *                  (if the size is 3, the top row of the hexagon has 3 Spaces.)
    */
   public ReversiModel(int boardSize) {
-    if (boardSize <= 2) {
-      throw new IllegalArgumentException("Board size must be greater than 2.");
-    }
+    this(boardSize, new HexBoardShape());
+  }
+
+  /**
+   * Creates a Reversi Model game with the given board shape.
+   *
+   * @param boardSize the size of the board (interpretation depends on shape).
+   * @param boardShape the board shape to use.
+   */
+  public ReversiModel(int boardSize, IBoardShape boardShape) {
+    boardShape.validateBoardSize(boardSize);
     this.boardSize = boardSize;
-    this.board = new ArrayList<>();
-    initBoard(boardSize);
-    initSpacesInBoard(boardSize);
+    this.boardShape = boardShape;
+    this.board = boardShape.createBoard(boardSize);
+    boardShape.placeInitialPieces(this.board, boardSize);
     this.currentTurn = Player.BLACK;
   }
 
   /**
    * Private copy constructor used by {@link #copyModel()}.
    */
-  private ReversiModel(int boardSize, List<List<ISpace>> board, Player currentTurn) {
+  private ReversiModel(int boardSize, IBoardShape boardShape,
+                       List<List<ISpace>> board, Player currentTurn) {
     this.boardSize = boardSize;
+    this.boardShape = boardShape;
     this.board = board;
     this.currentTurn = currentTurn;
   }
@@ -42,6 +51,11 @@ public class ReversiModel implements IReversiModel {
   @Override
   public int getBoardSize() {
     return this.boardSize;
+  }
+
+  @Override
+  public IBoardShape getBoardShape() {
+    return this.boardShape;
   }
 
   @Override
@@ -145,34 +159,30 @@ public class ReversiModel implements IReversiModel {
 
   @Override
   public boolean isValidMove(int row, int col, Player player) {
-    if (row < 0 || row >= getBoard().size() || col < 0 || col >= getRow(row).size()
-            || !getSpace(row, col).isEmpty()) {
+    if (!boardShape.isWithinBounds(board, row, col) || !getSpace(row, col).isEmpty()) {
       return false;
     }
-    for (int dr = -1; dr <= 1; dr++) {
-      for (int dc = -1; dc <= 1; dc++) {
-        if (dr == 0 && dc == 0) {
-          continue;
+    for (int[] dir : boardShape.getDirections(row, col)) {
+      int dr = dir[0];
+      int dc = dir[1];
+      int r = row + dr;
+      int c = col + dc;
+      boolean foundOpponent = false;
+      while (boardShape.isWithinBounds(board, r, c)) {
+        ISpace space = getSpace(r, c);
+        if (space.isEmpty()) {
+          break;
         }
-        int r = row + dr;
-        int c = col + dc;
-        boolean foundSameColor = false;
-        while (r >= 0 && r < getBoard().size() && c >= 0 && c < getRow(r).size()) {
-          ISpace space = getSpace(r, c);
-          if (space.isEmpty()) {
+        if (space.getPlayer() == currentTurn) {
+          if (foundOpponent) {
+            return true;
+          } else {
             break;
           }
-          if (space.getPlayer() == currentTurn) {
-            if (foundSameColor) {
-              return true;
-            } else {
-              break;
-            }
-          }
-          foundSameColor = true;
-          r += dr;
-          c += dc;
         }
+        foundOpponent = true;
+        r += dr;
+        c += dc;
       }
     }
     return false;
@@ -199,8 +209,8 @@ public class ReversiModel implements IReversiModel {
 
   @Override
   public boolean noValidMoves(Player player) {
-    for (int row = 0; row < getBoard().size(); row++) {
-      for (int col = 0; col < getRow(row).size(); col++) {
+    for (int row = 0; row < board.size(); row++) {
+      for (int col = 0; col < board.get(row).size(); col++) {
         if (getSpace(row, col).isEmpty()) {
           if (isValidMove(row, col, player)) {
             return false;
@@ -222,7 +232,7 @@ public class ReversiModel implements IReversiModel {
 
   @Override
   public IReversiModel copyModel() {
-    return new ReversiModel(this.boardSize, this.copyBoard(), this.currentTurn);
+    return new ReversiModel(this.boardSize, this.boardShape, this.copyBoard(), this.currentTurn);
   }
 
   @Override
@@ -246,8 +256,8 @@ public class ReversiModel implements IReversiModel {
   }
 
   private boolean gameOverByFullBoard() {
-    for (int row = 0; row < getBoard().size(); row++) {
-      for (int col = 0; col < getRow(row).size(); col++) {
+    for (int row = 0; row < board.size(); row++) {
+      for (int col = 0; col < board.get(row).size(); col++) {
         if (getSpace(row, col).isEmpty()) {
           return false;
         }
@@ -260,34 +270,6 @@ public class ReversiModel implements IReversiModel {
     return noValidMoves(Player.BLACK) && noValidMoves(Player.WHITE);
   }
 
-  private void initBoard(int boardSize) {
-    for (int i = 0; i < (boardSize * 2) - 1; i++) {
-      board.add(new ArrayList<>());
-    }
-  }
-
-  private void initSpacesInBoard(int boardSize) {
-    int spaces = 0;
-    for (int row = 0; row < board.size(); row++) {
-      if (row < boardSize) {
-        for (int j = 0; j < boardSize + row; j++) {
-          board.get(row).add(new Space());
-        }
-      } else {
-        for (int j = 0; j < (boardSize * 2) - 2 - spaces; j++) {
-          board.get(row).add(new Space());
-        }
-        spaces++;
-      }
-    }
-    this.getSpace(boardSize - 2, boardSize - 2).setFilled(Player.BLACK);
-    this.getSpace(boardSize - 1, boardSize).setFilled(Player.BLACK);
-    this.getSpace(boardSize, boardSize - 2).setFilled(Player.BLACK);
-    this.getSpace(boardSize - 2, boardSize - 1).setFilled(Player.WHITE);
-    this.getSpace(boardSize - 1, boardSize - 2).setFilled(Player.WHITE);
-    this.getSpace(boardSize, boardSize - 1).setFilled(Player.WHITE);
-  }
-
   private void changeTurn() {
     if (currentTurn == Player.BLACK) {
       currentTurn = Player.WHITE;
@@ -297,39 +279,32 @@ public class ReversiModel implements IReversiModel {
   }
 
   private void flipPieces(int row, int col) {
-    for (int dr = -1; dr <= 1; dr++) {
-      for (int dc = -1; dc <= 1; dc++) {
-        if (dr == 0 && dc == 0) {
-          continue;
+    for (int[] dir : boardShape.getDirections(row, col)) {
+      int dr = dir[0];
+      int dc = dir[1];
+      int r = row + dr;
+      int c = col + dc;
+      boolean foundOppPlayer = false;
+      List<ISpace> spacesToFlip = new ArrayList<>();
+      while (boardShape.isWithinBounds(board, r, c)) {
+        ISpace adjacentSpace = getSpace(r, c);
+        if (adjacentSpace.isEmpty()) {
+          break;
         }
-        int r = row + dr;
-        int c = col + dc;
-        boolean foundOppPlayer = false;
-        List<ISpace> spacesToFlip = new ArrayList<>();
-        while (isWithinBounds(r, c)) {
-          ISpace adjacentSpace = getSpace(r, c);
-          if (adjacentSpace.isEmpty()) {
-            break;
-          }
-          if (adjacentSpace.getPlayer() == currentTurn) {
-            if (foundOppPlayer) {
-              for (ISpace spaceToFlip : spacesToFlip) {
-                spaceToFlip.setFilled(currentTurn);
-              }
+        if (adjacentSpace.getPlayer() == currentTurn) {
+          if (foundOppPlayer) {
+            for (ISpace spaceToFlip : spacesToFlip) {
+              spaceToFlip.setFilled(currentTurn);
             }
-            break;
           }
-          foundOppPlayer = true;
-          spacesToFlip.add(adjacentSpace);
-          r += dr;
-          c += dc;
+          break;
         }
+        foundOppPlayer = true;
+        spacesToFlip.add(adjacentSpace);
+        r += dr;
+        c += dc;
       }
     }
-  }
-
-  private boolean isWithinBounds(int row, int col) {
-    return row >= 0 && row < this.getBoard().size() && col >= 0 && col < this.getRow(row).size();
   }
 
   private List<List<ISpace>> copyBoard() {

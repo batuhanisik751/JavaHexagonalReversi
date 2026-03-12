@@ -10,12 +10,15 @@ import cs3500.reversi.model.Player;
  */
 public final class LoadResult {
   private final int boardSize;
+  private final String shapeName;
   private final Player currentTurn;
   private final Player[][] boardState;
   private final List<MoveRecord> history;
 
-  LoadResult(int boardSize, Player currentTurn, Player[][] boardState, List<MoveRecord> history) {
+  LoadResult(int boardSize, String shapeName, Player currentTurn,
+             Player[][] boardState, List<MoveRecord> history) {
     this.boardSize = boardSize;
+    this.shapeName = shapeName;
     this.currentTurn = currentTurn;
     this.boardState = boardState;
     this.history = history;
@@ -23,6 +26,10 @@ public final class LoadResult {
 
   public int getBoardSize() {
     return boardSize;
+  }
+
+  public String getShapeName() {
+    return shapeName;
   }
 
   public Player getCurrentTurn() {

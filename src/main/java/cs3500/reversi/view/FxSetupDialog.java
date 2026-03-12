@@ -34,6 +34,7 @@ public class FxSetupDialog {
   private static final String[] THEME_OPTIONS = {"Dark", "Classic Green", "High Contrast"};
   private static final String[] TIMER_OPTIONS = {"No Limit", "10s", "30s", "60s"};
   private static final String[] GAME_MODE_OPTIONS = {"Local Game", "Host Game (LAN)", "Join Game (LAN)"};
+  private static final String[] BOARD_SHAPE_OPTIONS = {"Hexagonal", "Square (Othello)", "Triangular"};
 
   private final Stage stage;
   private final Spinner<Integer> boardSizeSpinner;
@@ -41,10 +42,12 @@ public class FxSetupDialog {
   private final ComboBox<String> player2Combo;
   private final ComboBox<String> themeCombo;
   private final ComboBox<String> gameModeCombo;
+  private final ComboBox<String> boardShapeCombo;
   private final TextField portField;
   private final TextField hostField;
   private final Label player2Label;
   private final Label boardSizeLabel;
+  private final Label boardShapeLabel;
   private final ComboBox<String> timerCombo;
   private final Label portLabel;
   private final Label hostLabel;
@@ -91,6 +94,16 @@ public class FxSetupDialog {
     gameModeCombo.getSelectionModel().selectFirst();
     gameModeCombo.setOnAction(e -> updateVisibility());
     content.add(gameModeCombo, 1, row++);
+
+    // Board Shape
+    boardShapeLabel = styledLabel("Board Shape:");
+    content.add(boardShapeLabel, 0, row);
+    boardShapeCombo = new ComboBox<>(FXCollections.observableArrayList(BOARD_SHAPE_OPTIONS));
+    boardShapeCombo.setStyle(FIELD_STYLE);
+    boardShapeCombo.setPrefWidth(180);
+    boardShapeCombo.getSelectionModel().selectFirst();
+    boardShapeCombo.setOnAction(e -> updateBoardSizeConstraints());
+    content.add(boardShapeCombo, 1, row++);
 
     // Board Size
     boardSizeLabel = styledLabel("Board Size:");
@@ -177,10 +190,45 @@ public class FxSetupDialog {
     updateVisibility();
   }
 
+  private void updateBoardSizeConstraints() {
+    String shape = boardShapeCombo.getValue();
+    int min;
+    int max;
+    int defaultVal;
+    int step = 1;
+    switch (shape) {
+      case "Square (Othello)":
+        min = 4;
+        max = 12;
+        defaultVal = 8;
+        step = 2;
+        break;
+      case "Triangular":
+        min = 4;
+        max = 8;
+        defaultVal = 5;
+        break;
+      default: // Hexagonal
+        min = 3;
+        max = 8;
+        defaultVal = 4;
+        break;
+    }
+    boardSizeSpinner.setValueFactory(
+            new SpinnerValueFactory.IntegerSpinnerValueFactory(min, max, defaultVal, step));
+    updateVisibility();
+  }
+
   private void updateVisibility() {
     String mode = gameModeCombo.getValue();
     boolean isLocal = "Local Game".equals(mode);
     boolean isJoin = "Join Game (LAN)".equals(mode);
+
+    // Board shape: visible for local and host
+    boardShapeLabel.setVisible(!isJoin);
+    boardShapeCombo.setVisible(!isJoin);
+    boardShapeLabel.setManaged(!isJoin);
+    boardShapeCombo.setManaged(!isJoin);
 
     // Board size: visible for local and host (server decides size)
     boardSizeLabel.setVisible(!isJoin);
@@ -246,6 +294,21 @@ public class FxSetupDialog {
       return "join";
     }
     return "local";
+  }
+
+  /**
+   * Returns the selected board shape name: "hexagonal", "square", or "triangular".
+   */
+  public String getShapeName() {
+    String selection = boardShapeCombo.getValue();
+    switch (selection) {
+      case "Square (Othello)":
+        return "square";
+      case "Triangular":
+        return "triangular";
+      default:
+        return "hexagonal";
+    }
   }
 
   /**
